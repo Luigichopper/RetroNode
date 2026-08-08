@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(GAME_SOURCES
     src/module_init.cpp
+    src/player_controller.cpp
 )
 
 add_library(game SHARED ${GAME_SOURCES})

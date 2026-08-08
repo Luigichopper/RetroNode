@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Fetch SDL3 dependency
+# Fetch dependencies
 include(FetchContent)
 
 set(SDL_TEST_LIBRARY OFF CACHE BOOL "Disable SDL3 tests" FORCE)
@@ -18,12 +18,31 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 
-FetchContent_MakeAvailable(SDL3)
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.3
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(SDL3 nlohmann_json)
 
 # Engine sources
 set(ENGINE_SOURCES
     src/platform/main.cpp
-    src/core/math/fixed16.h
+    src/platform/game_module.cpp
+    src/core/object/object.cpp
+    src/core/object/class_db.cpp
+    src/servers/input.cpp
+    src/servers/visual_server.cpp
+    src/servers/physics_server.cpp
+    src/scene/main/node.cpp
+    src/scene/main/scene_tree.cpp
+    src/scene/main/scene_loader.cpp
+    src/scene/2d/node_2d.cpp
+    src/scene/2d/sprite_2d.cpp
+    src/scene/2d/camera_2d.cpp
+    src/scene/physics/character_body_2d.cpp
 )
 
 add_executable(retronode ${ENGINE_SOURCES})
@@ -31,6 +50,8 @@ add_executable(retronode ${ENGINE_SOURCES})
 target_include_directories(retronode PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+
+target_link_libraries(retronode PRIVATE nlohmann_json::nlohmann_json)
 
 if (TARGET SDL3::SDL3-shared)
     target_link_libraries(retronode PRIVATE SDL3::SDL3-shared)
@@ -41,13 +62,11 @@ else()
 endif()
 
 if (WIN32)
-    # Enable dynamic module handling symbols export/import
-    target_compile_definitions(retronode PRIVATE RN_PLATFORM_WINDOWS)
+    target_compile_definitions(retronode PRIVATE RN_BUILD_ENGINE RN_PLATFORM_WINDOWS)
 else()
     target_link_libraries(retronode PRIVATE ${CMAKE_DL_LIBS})
 endif()
 
-# Build the game library alongside the engine
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/MyRPG/CMakeLists.txt")
     add_subdirectory(MyRPG)
 endif()

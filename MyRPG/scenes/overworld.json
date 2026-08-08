@@ -1,0 +1,28 @@
+{
+  "name": "Overworld",
+  "type": "Node2D",
+  "children": [
+    {
+      "name": "Hero",
+      "type": "CharacterBody2D",
+      "script": "PlayerController",
+      "properties": {
+        "position": {"x": 128, "y": 112}
+      },
+      "children": [
+        {
+          "name": "Sprite",
+          "type": "AnimatedSprite2D",
+          "properties": {
+            "sprite_frames": "res://assets/hero_anim.json",
+            "current_anim": "idle_down"
+          }
+        },
+        {
+          "name": "Camera",
+          "type": "Camera2D"
+        }
+      ]
+    }
+  ]
+}
