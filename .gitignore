@@ -1,0 +1,39 @@
+# Build directories
+build/
+bin/
+out/
+_deps/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+
+# Visual Studio / IDE files
+.vs/
+*.user
+*.suo
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.ide/
+.vscode/
+.idea/
+
+# Compiled Binaries & Libraries
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.exp
+*.pdb
+*.ilk
+
+# Game build outputs
+MyRPG/bin/
+
+# OS generated files
+.DS_Store
+Thumbs.db
