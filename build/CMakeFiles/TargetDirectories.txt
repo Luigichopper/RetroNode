@@ -1,0 +1,8 @@
+C:/Users/Luigi/Documents/RetroNode/build/CMakeFiles/retronode.dir
+C:/Users/Luigi/Documents/RetroNode/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/Luigi/Documents/RetroNode/build/CMakeFiles/ZERO_CHECK.dir
+C:/Users/Luigi/Documents/RetroNode/build/_deps/sdl3-build/CMakeFiles/SDL3-shared.dir
+C:/Users/Luigi/Documents/RetroNode/build/_deps/sdl3-build/CMakeFiles/SDL_uclibc.dir
+C:/Users/Luigi/Documents/RetroNode/build/_deps/sdl3-build/CMakeFiles/ALL_BUILD.dir
+C:/Users/Luigi/Documents/RetroNode/build/MyRPG/CMakeFiles/game.dir
+C:/Users/Luigi/Documents/RetroNode/build/MyRPG/CMakeFiles/ALL_BUILD.dir

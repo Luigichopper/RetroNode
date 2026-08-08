@@ -1,0 +1,12 @@
+{
+  "name": "MyRPG",
+  "version": "1.0.0",
+  "main_scene": "res://scenes/overworld.json",
+  "display": {
+    "window_width": 1024,
+    "window_height": 896,
+    "virtual_width": 256,
+    "virtual_height": 224,
+    "target_fps": 60
+  }
+}

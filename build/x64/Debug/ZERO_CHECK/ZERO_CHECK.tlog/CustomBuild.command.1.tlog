@@ -1,0 +1,10 @@
+^C:\USERS\LUIGI\DOCUMENTS\RETRONODE\BUILD\CMAKEFILES\864350951FDB4408DB148D816AE7C5B5\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/Luigi/Documents/RetroNode -BC:/Users/Luigi/Documents/RetroNode/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/Luigi/Documents/RetroNode/build/RetroNode.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
