@@ -12,7 +12,8 @@
 
 namespace RetroNode {
 
-typedef void (*RegisterTypesFunc)();
+class ClassDB;
+typedef void (*RegisterTypesFunc)(ClassDB* db);
 
 class GameModuleLoader {
 private:

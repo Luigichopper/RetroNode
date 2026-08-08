@@ -1,4 +1,5 @@
 #include "game_module.h"
+#include "../core/object/class_db.h"
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -52,8 +53,8 @@ bool GameModuleLoader::load_module() {
 
     RegisterTypesFunc register_fn = (RegisterTypesFunc)GetProcAddress(handle, "retronode_register_types");
     if (register_fn) {
-        std::cout << "[GameModuleLoader] Invoking retronode_register_types()..." << std::endl;
-        register_fn();
+        std::cout << "[GameModuleLoader] Invoking retronode_register_types(ClassDB*)..." << std::endl;
+        register_fn(ClassDB::get());
     } else {
         std::cerr << "[GameModuleLoader] Warning: 'retronode_register_types' symbol not found in DLL" << std::endl;
     }
@@ -66,7 +67,7 @@ bool GameModuleLoader::load_module() {
 
     RegisterTypesFunc register_fn = (RegisterTypesFunc)dlsym(handle, "retronode_register_types");
     if (register_fn) {
-        register_fn();
+        register_fn(ClassDB::get());
     }
 #endif
 

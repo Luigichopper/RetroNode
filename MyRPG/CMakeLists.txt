@@ -15,6 +15,8 @@ target_include_directories(game PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../src
 )
 
+target_link_libraries(game PRIVATE retronode_core)
+
 set_target_properties(game PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin"

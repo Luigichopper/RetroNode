@@ -27,9 +27,8 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(SDL3 nlohmann_json)
 
-# Engine sources
-set(ENGINE_SOURCES
-    src/platform/main.cpp
+# Engine Core Library
+set(ENGINE_CORE_SOURCES
     src/platform/game_module.cpp
     src/core/object/object.cpp
     src/core/object/class_db.cpp
@@ -45,27 +44,31 @@ set(ENGINE_SOURCES
     src/scene/physics/character_body_2d.cpp
 )
 
-add_executable(retronode ${ENGINE_SOURCES})
+add_library(retronode_core STATIC ${ENGINE_CORE_SOURCES})
 
-target_include_directories(retronode PRIVATE
+target_include_directories(retronode_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(retronode PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(retronode_core PUBLIC nlohmann_json::nlohmann_json)
 
 if (TARGET SDL3::SDL3-shared)
-    target_link_libraries(retronode PRIVATE SDL3::SDL3-shared)
+    target_link_libraries(retronode_core PUBLIC SDL3::SDL3-shared)
 elseif (TARGET SDL3::SDL3)
-    target_link_libraries(retronode PRIVATE SDL3::SDL3)
+    target_link_libraries(retronode_core PUBLIC SDL3::SDL3)
 else()
-    target_link_libraries(retronode PRIVATE SDL3)
+    target_link_libraries(retronode_core PUBLIC SDL3)
 endif()
 
 if (WIN32)
-    target_compile_definitions(retronode PRIVATE RN_BUILD_ENGINE RN_PLATFORM_WINDOWS)
+    target_compile_definitions(retronode_core PUBLIC RN_PLATFORM_WINDOWS)
 else()
-    target_link_libraries(retronode PRIVATE ${CMAKE_DL_LIBS})
+    target_link_libraries(retronode_core PUBLIC ${CMAKE_DL_LIBS})
 endif()
+
+# Engine Main Executable
+add_executable(retronode src/platform/main.cpp)
+target_link_libraries(retronode PRIVATE retronode_core)
 
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/MyRPG/CMakeLists.txt")
     add_subdirectory(MyRPG)
