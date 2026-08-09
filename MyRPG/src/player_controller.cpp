@@ -7,10 +7,13 @@ void PlayerController::_ready() {
   std::cout << "[MyRPG] PlayerController ready!" << std::endl;
   sprite = get_node<AnimatedSprite2D>("Sprite");
   hurt_audio = get_node<AudioStreamPlayer>("HurtAudio");
+  anim_player = get_node<AnimationPlayer>("AnimPlayer");
+
   if (hurt_audio) {
     std::cout << "[MyRPG] PlayerController successfully bound HurtAudio node." << std::endl;
-  } else {
-    std::cout << "[MyRPG] Warning: HurtAudio node not found on PlayerController!" << std::endl;
+  }
+  if (anim_player) {
+    std::cout << "[MyRPG] PlayerController successfully bound AnimPlayer node." << std::endl;
   }
 }
 
@@ -48,19 +51,32 @@ void PlayerController::_physics_process(Fixed16 delta) {
 }
 
 void PlayerController::update_animation() {
-  if (!sprite)
+  if (anim_player) {
+    if (this->velocity.x.raw > 0)
+      anim_player->play("walk_right");
+    else if (this->velocity.x.raw < 0)
+      anim_player->play("walk_left");
+    else if (this->velocity.y.raw > 0)
+      anim_player->play("walk_down");
+    else if (this->velocity.y.raw < 0)
+      anim_player->play("walk_up");
+    else
+      anim_player->play("idle_down");
     return;
+  }
 
-  if (this->velocity.x.raw > 0)
-    sprite->play("walk_right");
-  else if (this->velocity.x.raw < 0)
-    sprite->play("walk_left");
-  else if (this->velocity.y.raw > 0)
-    sprite->play("walk_down");
-  else if (this->velocity.y.raw < 0)
-    sprite->play("walk_up");
-  else
-    sprite->play("idle_down");
+  if (sprite) {
+    if (this->velocity.x.raw > 0)
+      sprite->play("walk_right");
+    else if (this->velocity.x.raw < 0)
+      sprite->play("walk_left");
+    else if (this->velocity.y.raw > 0)
+      sprite->play("walk_down");
+    else if (this->velocity.y.raw < 0)
+      sprite->play("walk_up");
+    else
+      sprite->play("idle_down");
+  }
 }
 
 RN_REGISTER_CLASS(PlayerController);

@@ -58,6 +58,7 @@ set(ENGINE_CORE_SOURCES
     src/scene/gui/nine_patch_rect.cpp
     src/scene/gui/debug_overlay.cpp
     src/scene/audio/audio_stream_player.cpp
+    src/scene/animation/animation_player.cpp
 )
 
 add_library(retronode_core SHARED ${ENGINE_CORE_SOURCES})

@@ -20,6 +20,7 @@
 #include "scene/gui/nine_patch_rect.h"
 #include "scene/gui/debug_overlay.h"
 #include "scene/audio/audio_stream_player.h"
+#include "scene/animation/animation_player.h"
 #include "servers/audio_server.h"
 #include "game_module.h"
 
@@ -44,6 +45,7 @@ void register_engine_classes() {
     RN_REGISTER_CLASS(NinePatchRect);
     RN_REGISTER_CLASS(DebugOverlay);
     RN_REGISTER_CLASS(AudioStreamPlayer);
+    RN_REGISTER_CLASS(AnimationPlayer);
 }
 
 std::string resolve_project_dir(const std::string& input_dir, int argc, char* argv[]) {

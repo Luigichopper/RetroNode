@@ -9,6 +9,7 @@
 #include "../gui/nine_patch_rect.h"
 #include "../gui/debug_overlay.h"
 #include "../audio/audio_stream_player.h"
+#include "../animation/animation_player.h"
 #include "../../servers/texture_server.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
@@ -161,6 +162,33 @@ static Node* parse_node_internal(const json& j) {
             }
             if (props.contains("autoplay")) {
                 audio_player->autoplay = props.value("autoplay", false);
+            }
+        }
+
+        AnimationPlayer* anim_player = dynamic_cast<AnimationPlayer*>(node);
+        if (anim_player && props.contains("animations")) {
+            const auto& anims = props["animations"];
+            if (anims.is_object()) {
+                for (auto& [anim_name, anim_data] : anims.items()) {
+                    AnimationTrack track;
+                    track.name = anim_name;
+                    track.fps = anim_data.value("fps", 8.0f);
+                    track.loop = anim_data.value("loop", true);
+
+                    if (anim_data.contains("frames") && anim_data["frames"].is_array()) {
+                        for (const auto& f : anim_data["frames"]) {
+                            float fx = f.value("x", 0.0f);
+                            float fy = f.value("y", 0.0f);
+                            float fw = f.value("w", 16.0f);
+                            float fh = f.value("h", 16.0f);
+                            track.frames.push_back(Rect2Fixed::from_floats(fx, fy, fw, fh));
+                        }
+                    }
+                    anim_player->add_track(track);
+                }
+            }
+            if (props.contains("autoplay")) {
+                anim_player->play(props["autoplay"]);
             }
         }
 

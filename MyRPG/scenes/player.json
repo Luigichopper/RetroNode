@@ -21,6 +21,40 @@
         "stream": "res://assets/audio/hurt_1.wav",
         "volume": 1.0
       }
+    },
+    {
+      "name": "AnimPlayer",
+      "type": "AnimationPlayer",
+      "properties": {
+        "autoplay": "idle_down",
+        "animations": {
+          "idle_down": {
+            "fps": 1,
+            "loop": true,
+            "frames": [{"x": 0, "y": 0, "w": 16, "h": 16}]
+          },
+          "walk_down": {
+            "fps": 8,
+            "loop": true,
+            "frames": [{"x": 0, "y": 0, "w": 16, "h": 16}]
+          },
+          "walk_up": {
+            "fps": 8,
+            "loop": true,
+            "frames": [{"x": 0, "y": 0, "w": 16, "h": 16}]
+          },
+          "walk_left": {
+            "fps": 8,
+            "loop": true,
+            "frames": [{"x": 0, "y": 0, "w": 16, "h": 16}]
+          },
+          "walk_right": {
+            "fps": 8,
+            "loop": true,
+            "frames": [{"x": 0, "y": 0, "w": 16, "h": 16}]
+          }
+        }
+      }
     }
   ]
 }
