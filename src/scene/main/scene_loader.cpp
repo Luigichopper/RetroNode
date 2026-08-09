@@ -1,6 +1,8 @@
 #include "scene_loader.h"
 #include "../../core/object/class_db.h"
 #include "../2d/node_2d.h"
+#include "../2d/sprite_2d.h"
+#include "../2d/tile_map_layer.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <iostream>
@@ -34,11 +36,40 @@ static Node* parse_node_internal(const json& j) {
     // Apply properties if present
     if (j.contains("properties")) {
         const auto& props = j["properties"];
+
         Node2D* node2d = dynamic_cast<Node2D*>(node);
         if (node2d && props.contains("position")) {
             float px = props["position"].value("x", 0.0f);
             float py = props["position"].value("y", 0.0f);
-            node2d->position = Vector2Fixed::from_floats(px, py);
+            node2d->set_position(Vector2Fixed::from_floats(px, py));
+        }
+
+        Sprite2D* sprite = dynamic_cast<Sprite2D*>(node);
+        if (sprite && props.contains("texture")) {
+            sprite->set_texture_path(props["texture"]);
+        }
+
+        TileMapLayer* tilemap = dynamic_cast<TileMapLayer*>(node);
+        if (tilemap) {
+            if (props.contains("tileset")) {
+                tilemap->set_tileset_path(props["tileset"]);
+            }
+
+            int cols = props.value("columns", 16);
+            int rows = props.value("rows", 14);
+            int tile_sz = props.value("tile_size", 16);
+
+            std::vector<int> tiles;
+            std::vector<bool> collisions;
+
+            if (props.contains("tile_data") && props["tile_data"].is_array()) {
+                tiles = props["tile_data"].get<std::vector<int>>();
+            }
+            if (props.contains("collision_data") && props["collision_data"].is_array()) {
+                collisions = props["collision_data"].get<std::vector<bool>>();
+            }
+
+            tilemap->setup_map(cols, rows, tile_sz, tiles, collisions);
         }
     }
 

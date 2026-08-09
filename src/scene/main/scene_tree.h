@@ -5,10 +5,12 @@
 
 namespace RetroNode {
 
-class SceneTree {
+class RN_API SceneTree {
 private:
     static SceneTree* instance;
     Node* root_node = nullptr;
+
+    void cleanup_queued_nodes(Node* node);
 
 public:
     SceneTree();

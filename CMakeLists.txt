@@ -25,29 +25,41 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 
-FetchContent_MakeAvailable(SDL3 nlohmann_json)
+FetchContent_Declare(
+    stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+    GIT_TAG master
+    GIT_SHALLOW TRUE
+)
 
-# Engine Core Library
+FetchContent_MakeAvailable(SDL3 nlohmann_json stb)
+
+# Engine Core Shared Library
 set(ENGINE_CORE_SOURCES
     src/platform/game_module.cpp
     src/core/object/object.cpp
     src/core/object/class_db.cpp
     src/servers/input.cpp
     src/servers/visual_server.cpp
+    src/servers/texture_server.cpp
     src/servers/physics_server.cpp
     src/scene/main/node.cpp
     src/scene/main/scene_tree.cpp
     src/scene/main/scene_loader.cpp
     src/scene/2d/node_2d.cpp
     src/scene/2d/sprite_2d.cpp
+    src/scene/2d/tile_map_layer.cpp
     src/scene/2d/camera_2d.cpp
     src/scene/physics/character_body_2d.cpp
 )
 
-add_library(retronode_core STATIC ${ENGINE_CORE_SOURCES})
+add_library(retronode_core SHARED ${ENGINE_CORE_SOURCES})
+
+target_compile_definitions(retronode_core PRIVATE RN_BUILD_ENGINE)
 
 target_include_directories(retronode_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${stb_SOURCE_DIR}
 )
 
 target_link_libraries(retronode_core PUBLIC nlohmann_json::nlohmann_json)
@@ -66,9 +78,19 @@ else()
     target_link_libraries(retronode_core PUBLIC ${CMAKE_DL_LIBS})
 endif()
 
+set_target_properties(retronode_core PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Debug"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Debug"
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Debug"
+)
+
 # Engine Main Executable
 add_executable(retronode src/platform/main.cpp)
 target_link_libraries(retronode PRIVATE retronode_core)
+
+set_target_properties(retronode PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Debug"
+)
 
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/MyRPG/CMakeLists.txt")
     add_subdirectory(MyRPG)

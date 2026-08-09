@@ -2,6 +2,7 @@
 #define RETRONODE_FIXED16_H
 
 #include <cstdint>
+#include <cassert>
 
 namespace RetroNode {
 
@@ -38,6 +39,7 @@ struct Fixed16 {
     }
 
     constexpr Fixed16 operator/(const Fixed16& o) const {
+        assert(o.raw != 0 && "Fixed16 division by zero");
         if (o.raw == 0) return Fixed16(0);
         return Fixed16(static_cast<int32_t>((static_cast<int64_t>(raw) << 16) / o.raw));
     }
@@ -51,6 +53,7 @@ struct Fixed16 {
     }
 
     constexpr Fixed16& operator/=(const Fixed16& o) {
+        assert(o.raw != 0 && "Fixed16 division by zero");
         if (o.raw != 0) {
             raw = static_cast<int32_t>((static_cast<int64_t>(raw) << 16) / o.raw);
         }

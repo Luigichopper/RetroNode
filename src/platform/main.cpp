@@ -5,17 +5,20 @@
 #include "core/object/class_db.h"
 #include "servers/visual_server.h"
 #include "servers/physics_server.h"
+#include "servers/texture_server.h"
 #include "servers/input.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/scene_loader.h"
 #include "scene/2d/node_2d.h"
 #include "scene/2d/sprite_2d.h"
+#include "scene/2d/tile_map_layer.h"
 #include "scene/physics/character_body_2d.h"
 #include "scene/2d/camera_2d.h"
 #include "game_module.h"
 
 #include <iostream>
 #include <filesystem>
+#include <vector>
 
 using namespace RetroNode;
 namespace fs = std::filesystem;
@@ -25,8 +28,80 @@ void register_engine_classes() {
     RN_REGISTER_CLASS(Node2D);
     RN_REGISTER_CLASS(Sprite2D);
     RN_REGISTER_CLASS(AnimatedSprite2D);
+    RN_REGISTER_CLASS(TileMapLayer);
     RN_REGISTER_CLASS(CharacterBody2D);
     RN_REGISTER_CLASS(Camera2D);
+}
+
+std::string resolve_project_dir(const std::string& input_dir, int argc, char* argv[]) {
+    if (!input_dir.empty() && fs::exists(input_dir) && fs::is_directory(input_dir)) {
+        return input_dir;
+    }
+
+    std::vector<std::string> candidates = {
+        input_dir,
+        "./MyRPG",
+        "../MyRPG",
+        "../../MyRPG",
+        "../../../MyRPG"
+    };
+
+    if (argc > 0 && argv[0]) {
+        std::error_code ec;
+        fs::path exe_dir = fs::path(argv[0]).parent_path();
+        candidates.push_back((exe_dir / "MyRPG").string());
+        candidates.push_back((exe_dir / ".." / "MyRPG").string());
+        candidates.push_back((exe_dir / ".." / ".." / "MyRPG").string());
+        candidates.push_back((exe_dir / ".." / ".." / ".." / "MyRPG").string());
+    }
+
+    for (const auto& cand : candidates) {
+        if (!cand.empty() && fs::exists(cand) && fs::is_directory(cand)) {
+            if (fs::exists(cand + "/project.rnode") || fs::exists(cand + "/scenes") || fs::exists(cand + "/src")) {
+                return cand;
+            }
+        }
+    }
+
+    return input_dir.empty() ? "./MyRPG" : input_dir;
+}
+
+std::string find_game_dll(const std::string& proj_dir) {
+    std::vector<std::string> candidates = {
+        proj_dir + "/bin/Debug/game.dll",
+        proj_dir + "/bin/game.dll",
+        proj_dir + "/bin/Release/game.dll",
+        "./MyRPG/bin/Debug/game.dll",
+        "../MyRPG/bin/Debug/game.dll",
+        "../../MyRPG/bin/Debug/game.dll",
+        "./game.dll"
+    };
+
+    for (const auto& path : candidates) {
+        if (fs::exists(path)) {
+            return path;
+        }
+    }
+
+    return proj_dir + "/bin/Debug/game.dll";
+}
+
+std::string find_scene_file(const std::string& proj_dir) {
+    std::vector<std::string> candidates = {
+        proj_dir + "/scenes/overworld.json",
+        "./MyRPG/scenes/overworld.json",
+        "../MyRPG/scenes/overworld.json",
+        "../../MyRPG/scenes/overworld.json",
+        "./scenes/overworld.json"
+    };
+
+    for (const auto& path : candidates) {
+        if (fs::exists(path)) {
+            return path;
+        }
+    }
+
+    return proj_dir + "/scenes/overworld.json";
 }
 
 int main(int argc, char* argv[]) {
@@ -34,21 +109,32 @@ int main(int argc, char* argv[]) {
     std::cout << "        RetroNode 2D Engine v0.1.0        " << std::endl;
     std::cout << "==========================================" << std::endl;
 
+    // Eagerly initialize engine singletons
+    ClassDB::get();
+    Input::get();
+    PhysicsServer2D::get();
+    VisualServer::get();
+    TextureServer::get();
+    SceneTree::get();
+
     register_engine_classes();
 
     // Determine game project directory
-    std::string project_dir = "./MyRPG";
+    std::string specified_dir = "";
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--project" && i + 1 < argc) {
-            project_dir = argv[++i];
+            specified_dir = argv[++i];
         }
     }
 
-    std::string game_dll_path = project_dir + "/bin/Debug/game.dll";
-    if (!fs::exists(game_dll_path)) {
-        game_dll_path = project_dir + "/bin/game.dll";
-    }
+    std::string project_dir = resolve_project_dir(specified_dir, argc, argv);
+    std::string game_dll_path = find_game_dll(project_dir);
+
+    std::cout << "[RetroNode Engine] Project directory: " << project_dir << std::endl;
+    std::cout << "[RetroNode Engine] Game module path:  " << game_dll_path << std::endl;
+
+    TextureServer::get()->set_project_dir(project_dir);
 
     // Load dynamic game logic module
     GameModuleLoader module_loader(game_dll_path);
@@ -83,10 +169,13 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+    // Enable VSync to cap framerate and eliminate 100% CPU busy-wait spin
+    SDL_SetRenderVSync(renderer, 1);
+
     VisualServer::get()->init(renderer, 256, 224);
 
     // Load initial scene from JSON
-    std::string scene_path = project_dir + "/scenes/overworld.json";
+    std::string scene_path = find_scene_file(project_dir);
     Node* root_scene = SceneLoader::load_scene_from_file(scene_path);
     if (root_scene) {
         SceneTree::get()->set_root(root_scene);
@@ -96,6 +185,7 @@ int main(int argc, char* argv[]) {
     }
 
     const Fixed16 FIXED_DT = Fixed16::from_float(1.0f / 60.0f);
+    const float FIXED_DT_FLOAT = FIXED_DT.to_float();
     const Fixed16 MAX_FRAME_TIME = Fixed16::from_float(0.25f);
     Fixed16 accumulator = Fixed16(0);
 
@@ -133,7 +223,7 @@ int main(int argc, char* argv[]) {
             accumulator -= FIXED_DT;
         }
 
-        float render_alpha = accumulator.to_float() / FIXED_DT.to_float();
+        float render_alpha = accumulator.to_float() / FIXED_DT_FLOAT;
         
         // Frame Process & Render Step
         SceneTree::get()->process(delta_seconds);

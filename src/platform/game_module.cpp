@@ -1,5 +1,7 @@
 #include "game_module.h"
 #include "../core/object/class_db.h"
+#include "../scene/main/scene_tree.h"
+
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -89,7 +91,8 @@ void GameModuleLoader::unload_module() {
 bool GameModuleLoader::check_and_hot_reload() {
     uint64_t current_time = get_file_write_time(module_path);
     if (current_time > last_modified_time && current_time != 0) {
-        std::cout << "[GameModuleLoader] Detected modified module! Triggering Hot-Reload..." << std::endl;
+        std::cout << "[GameModuleLoader] Detected modified module! Safely resetting scene tree..." << std::endl;
+        SceneTree::get()->set_root(nullptr);
         return load_module();
     }
     return false;

@@ -6,18 +6,21 @@
 #include <cmath>
 #include "../core/math/vector2.h"
 #include "../core/math/rect2.h"
+#include "../core/object/class_db.h"
 
 namespace RetroNode {
 
 struct DrawCommand {
     Vector2Fixed world_position;
+    Vector2Fixed previous_position;
     Vector2Fixed size;
     Rect2Fixed src_rect;
+    uint32_t texture_id;
     int z_index;
     SDL_Color color;
 };
 
-class VisualServer {
+class RN_API VisualServer {
 private:
     static VisualServer* instance;
     SDL_Renderer* renderer = nullptr;
@@ -46,7 +49,15 @@ public:
     void set_camera_offset(const Vector2Fixed& offset) { camera_offset = offset; }
     Vector2Fixed get_camera_offset() const { return camera_offset; }
 
-    void submit_draw_sprite(const Vector2Fixed& pos, const Vector2Fixed& size, const Rect2Fixed& src_rect, int z_index = 0, SDL_Color color = {255, 255, 255, 255});
+    void submit_draw_sprite(
+        const Vector2Fixed& pos,
+        const Vector2Fixed& prev_pos,
+        const Vector2Fixed& size,
+        const Rect2Fixed& src_rect,
+        uint32_t texture_id = 0,
+        int z_index = 0,
+        SDL_Color color = {255, 255, 255, 255}
+    );
     
     void render(float alpha);
 

@@ -19,7 +19,7 @@
 
 namespace RetroNode {
 
-class ClassDB {
+class RN_API ClassDB {
 public:
     using CreationFunc = std::function<Object*()>;
 

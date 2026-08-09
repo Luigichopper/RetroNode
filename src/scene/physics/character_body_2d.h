@@ -6,7 +6,7 @@
 
 namespace RetroNode {
 
-class CharacterBody2D : public Node2D {
+class RN_API CharacterBody2D : public Node2D {
     RN_CLASS(CharacterBody2D, Node2D)
 
 public:

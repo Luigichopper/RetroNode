@@ -5,10 +5,11 @@
 #include <string>
 #include <SDL3/SDL.h>
 #include "../core/string_names.h"
+#include "../core/object/class_db.h"
 
 namespace RetroNode {
 
-class Input {
+class RN_API Input {
 private:
     static Input* instance;
     std::unordered_map<StringName, bool> action_states;

@@ -3,6 +3,48 @@
   "type": "Node2D",
   "children": [
     {
+      "name": "WorldMap",
+      "type": "TileMapLayer",
+      "properties": {
+        "columns": 16,
+        "rows": 14,
+        "tile_size": 16,
+        "tileset": "res://assets/tilesets/overworld_tiles.png",
+        "tile_data": [
+          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+          1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+        ],
+        "collision_data": [
+          true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+          true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true,
+          true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true,
+          true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true,
+          true, false, false, false, true, true, false, false, false, false, true, true, false, false, false, true,
+          true, false, false, false, true, true, false, false, false, false, true, true, false, false, false, true,
+          true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true,
+          true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true,
+          true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true,
+          true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true,
+          true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true,
+          true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true,
+          true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true,
+          true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true
+        ]
+      }
+    },
+    {
       "name": "Hero",
       "type": "CharacterBody2D",
       "script": "PlayerController",
@@ -14,8 +56,7 @@
           "name": "Sprite",
           "type": "AnimatedSprite2D",
           "properties": {
-            "sprite_frames": "res://assets/hero_anim.json",
-            "current_anim": "idle_down"
+            "texture": "res://assets/sprites/hero.png"
           }
         },
         {

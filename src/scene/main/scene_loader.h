@@ -6,7 +6,7 @@
 
 namespace RetroNode {
 
-class SceneLoader {
+class RN_API SceneLoader {
 public:
     static Node* load_scene_from_file(const std::string& filepath);
     static Node* parse_node_json(const void* json_obj_ptr);

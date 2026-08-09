@@ -12,7 +12,7 @@ namespace RetroNode {
 
 class SceneTree;
 
-class Node : public Object {
+class RN_API Node : public Object {
     RN_CLASS(Node, Object)
 
 protected:

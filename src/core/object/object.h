@@ -5,9 +5,19 @@
 #include <string>
 #include "../string_names.h"
 
+#if defined(_WIN32)
+  #ifdef RN_BUILD_ENGINE
+    #define RN_API __declspec(dllexport)
+  #else
+    #define RN_API __declspec(dllimport)
+  #endif
+#else
+  #define RN_API __attribute__((visibility("default")))
+#endif
+
 namespace RetroNode {
 
-class Object {
+class RN_API Object {
 private:
     uint64_t instance_id;
     static uint64_t next_instance_id;

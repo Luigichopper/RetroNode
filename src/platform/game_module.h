@@ -2,6 +2,7 @@
 #define RETRONODE_GAME_MODULE_H
 
 #include <string>
+#include "../core/object/class_db.h"
 
 #if defined(_WIN32)
   #include <windows.h>
@@ -15,7 +16,7 @@ namespace RetroNode {
 class ClassDB;
 typedef void (*RegisterTypesFunc)(ClassDB* db);
 
-class GameModuleLoader {
+class RN_API GameModuleLoader {
 private:
     std::string module_path;
     std::string temp_module_path;

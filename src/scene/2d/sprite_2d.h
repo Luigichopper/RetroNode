@@ -6,10 +6,12 @@
 
 namespace RetroNode {
 
-class Sprite2D : public Node2D {
+class RN_API Sprite2D : public Node2D {
     RN_CLASS(Sprite2D, Node2D)
 
 public:
+    uint32_t texture_id = 0;
+    std::string texture_path;
     Vector2Fixed texture_size;
     Rect2Fixed region_rect;
     int z_index = 0;
@@ -18,10 +20,11 @@ public:
     Sprite2D();
     virtual ~Sprite2D() = default;
 
+    void set_texture_path(const std::string& path);
     virtual void _process(float delta) override;
 };
 
-class AnimatedSprite2D : public Sprite2D {
+class RN_API AnimatedSprite2D : public Sprite2D {
     RN_CLASS(AnimatedSprite2D, Sprite2D)
 
 private:
