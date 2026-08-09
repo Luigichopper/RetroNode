@@ -49,6 +49,7 @@ public:
     void set_camera_offset(const Vector2Fixed& offset) { camera_offset = offset; }
     Vector2Fixed get_camera_offset() const { return camera_offset; }
 
+    void clear_render_queue() { render_queue.clear(); }
     void submit_draw_sprite(
         const Vector2Fixed& pos,
         const Vector2Fixed& prev_pos,

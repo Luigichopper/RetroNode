@@ -11,6 +11,7 @@ CharacterBody2D::CharacterBody2D()
 }
 
 void CharacterBody2D::_physics_process(Fixed16 delta) {
+    Node2D::_physics_process(delta);
     last_delta = delta;
 }
 

@@ -23,8 +23,8 @@ public:
     Vector2Fixed get_global_previous_position() const;
 
     void set_position(const Vector2Fixed& pos) { 
-        previous_position = position;
-        position = pos; 
+        position = pos;
+        previous_position = pos; 
     }
     Vector2Fixed get_position() const { return position; }
 

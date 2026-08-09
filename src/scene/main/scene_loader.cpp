@@ -45,12 +45,20 @@ static Node* parse_node_internal(const json& j) {
         }
 
         Sprite2D* sprite = dynamic_cast<Sprite2D*>(node);
-        if (sprite && props.contains("texture")) {
-            sprite->set_texture_path(props["texture"]);
+        if (sprite) {
+            if (props.contains("texture")) {
+                sprite->set_texture_path(props["texture"]);
+            }
+            if (props.contains("z_index")) {
+                sprite->z_index = props.value("z_index", 10);
+            }
         }
 
         TileMapLayer* tilemap = dynamic_cast<TileMapLayer*>(node);
         if (tilemap) {
+            if (props.contains("z_index")) {
+                tilemap->z_index = props.value("z_index", -10);
+            }
             if (props.contains("tileset")) {
                 tilemap->set_tileset_path(props["tileset"]);
             }

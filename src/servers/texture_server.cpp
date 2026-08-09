@@ -85,7 +85,7 @@ uint32_t TextureServer::load_texture(const std::string& filepath) {
     SDL_Surface* surface = SDL_CreateSurfaceFrom(
         width,
         height,
-        SDL_PIXELFORMAT_RGBA8888,
+        SDL_PIXELFORMAT_RGBA32,
         data,
         width * 4
     );
@@ -106,6 +106,7 @@ uint32_t TextureServer::load_texture(const std::string& filepath) {
     }
 
     SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
 
     uint32_t new_id = static_cast<uint32_t>(textures.size());
     textures.push_back({new_id, filepath, texture, width, height});
@@ -126,7 +127,7 @@ uint32_t TextureServer::create_procedural_texture(const std::string& name, int w
     SDL_Surface* surface = SDL_CreateSurfaceFrom(
         width,
         height,
-        SDL_PIXELFORMAT_RGBA8888,
+        SDL_PIXELFORMAT_RGBA32,
         const_cast<uint8_t*>(rgba_pixels),
         width * 4
     );
@@ -139,6 +140,7 @@ uint32_t TextureServer::create_procedural_texture(const std::string& name, int w
     if (!texture) return 0;
 
     SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
 
     uint32_t new_id = static_cast<uint32_t>(textures.size());
     textures.push_back({new_id, name, texture, width, height});

@@ -83,8 +83,6 @@ void TileMapLayer::_process(float delta) {
                 static_cast<float>(tile_size)
             );
 
-            SDL_Color tile_color = { 100, 140, 90, 255 }; // Procedural tile color fallback
-
             VisualServer::get()->submit_draw_sprite(
                 tile_world_pos,
                 tile_prev_pos,
@@ -92,7 +90,7 @@ void TileMapLayer::_process(float delta) {
                 src_rect,
                 tileset_texture_id,
                 z_index,
-                tile_color
+                modulate
             );
         }
     }

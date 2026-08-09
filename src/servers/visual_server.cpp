@@ -97,6 +97,8 @@ void VisualServer::render(float alpha) {
         SDL_Texture* tex = TextureServer::get()->get_texture(cmd.texture_id);
 
         if (tex) {
+            SDL_SetTextureColorMod(tex, cmd.color.r, cmd.color.g, cmd.color.b);
+            SDL_SetTextureAlphaMod(tex, cmd.color.a);
             SDL_FRect src_frect = {
                 cmd.src_rect.position.x.to_float(),
                 cmd.src_rect.position.y.to_float(),

@@ -217,6 +217,9 @@ int main(int argc, char* argv[]) {
 
         accumulator += frame_time;
 
+        // Clear render queue once per frame before physics & frame process
+        VisualServer::get()->clear_render_queue();
+
         // Fixed 60Hz Physics Step
         while (accumulator >= FIXED_DT) {
             SceneTree::get()->physics_process(FIXED_DT);

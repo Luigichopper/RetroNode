@@ -4,6 +4,7 @@
 #include "node_2d.h"
 #include <vector>
 #include <string>
+#include <SDL3/SDL.h>
 
 namespace RetroNode {
 
@@ -20,6 +21,7 @@ public:
     std::vector<int> tile_data;
     std::vector<bool> collision_data;
     int z_index = -10;
+    SDL_Color modulate = { 255, 255, 255, 255 };
 
     TileMapLayer();
     virtual ~TileMapLayer() = default;

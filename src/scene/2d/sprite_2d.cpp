@@ -40,7 +40,7 @@ void Sprite2D::_process(float delta) {
 
 AnimatedSprite2D::AnimatedSprite2D() {
     name = "AnimatedSprite2D";
-    modulate = { 80, 200, 120, 255 }; 
+    modulate = { 255, 255, 255, 255 }; 
 }
 
 } // namespace RetroNode

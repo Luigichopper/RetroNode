@@ -14,7 +14,7 @@ public:
     std::string texture_path;
     Vector2Fixed texture_size;
     Rect2Fixed region_rect;
-    int z_index = 0;
+    int z_index = 10;
     SDL_Color modulate = {255, 255, 255, 255};
 
     Sprite2D();
