@@ -1,6 +1,8 @@
 #include "game_module.h"
 #include "../core/object/class_db.h"
 #include "../scene/main/scene_tree.h"
+#include "../scene/main/scene_loader.h"
+#include "../servers/physics_server.h"
 
 #include <iostream>
 #include <fstream>
@@ -92,8 +94,19 @@ bool GameModuleLoader::check_and_hot_reload() {
     uint64_t current_time = get_file_write_time(module_path);
     if (current_time > last_modified_time && current_time != 0) {
         std::cout << "[GameModuleLoader] Detected modified module! Safely resetting scene tree..." << std::endl;
+        PhysicsServer2D::get()->clear();
         SceneTree::get()->set_root(nullptr);
-        return load_module();
+        bool success = load_module();
+        if (success && !scene_path.empty()) {
+            Node* new_root = SceneLoader::load_scene_from_file(scene_path);
+            if (new_root) {
+                SceneTree::get()->set_root(new_root);
+                std::cout << "[GameModuleLoader] Hot-reloaded scene: " << scene_path << std::endl;
+            } else {
+                std::cerr << "[GameModuleLoader] Failed to reload scene after module update: " << scene_path << std::endl;
+            }
+        }
+        return success;
     }
     return false;
 }

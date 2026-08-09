@@ -37,6 +37,7 @@ FetchContent_MakeAvailable(SDL3 nlohmann_json stb)
 # Engine Core Shared Library
 set(ENGINE_CORE_SOURCES
     src/platform/game_module.cpp
+    src/core/string_names.cpp
     src/core/object/object.cpp
     src/core/object/class_db.cpp
     src/servers/input.cpp
@@ -52,6 +53,9 @@ set(ENGINE_CORE_SOURCES
     src/scene/2d/tile_map_layer.cpp
     src/scene/2d/camera_2d.cpp
     src/scene/physics/character_body_2d.cpp
+    src/scene/physics/collision_shape_2d.cpp
+    src/scene/physics/static_body_2d.cpp
+    src/scene/physics/area_2d.cpp
     src/scene/gui/control.cpp
     src/scene/gui/canvas_layer.cpp
     src/scene/gui/label.cpp

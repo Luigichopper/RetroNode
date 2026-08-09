@@ -1,4 +1,5 @@
 #include "physics_server.h"
+#include "../scene/2d/node_2d.h"
 #include <algorithm>
 #include <cmath>
 
@@ -8,18 +9,20 @@ PhysicsServer2D* PhysicsServer2D::instance = nullptr;
 
 PhysicsServer2D::PhysicsServer2D() {}
 
-static inline int to_cell(float coord, int cell_sz) {
-    return static_cast<int>(std::floor(coord / static_cast<float>(cell_sz)));
+static inline int to_cell(Fixed16 coord, int cell_sz) {
+    int c = coord.to_int();
+    return (c >= 0) ? (c / cell_sz) : ((c - cell_sz + 1) / cell_sz);
 }
 
 void PhysicsServer2D::add_static_box(uint64_t id, const Rect2Fixed& bounds) {
     size_t index = static_bodies.size();
     static_bodies.push_back({id, bounds, true});
 
-    float x1 = bounds.position.x.to_float();
-    float y1 = bounds.position.y.to_float();
-    float x2 = x1 + bounds.size.x.to_float() - 0.01f;
-    float y2 = y1 + bounds.size.y.to_float() - 0.01f;
+    Fixed16 epsilon = Fixed16::from_raw(1);
+    Fixed16 x1 = bounds.position.x;
+    Fixed16 y1 = bounds.position.y;
+    Fixed16 x2 = bounds.position.x + bounds.size.x - epsilon;
+    Fixed16 y2 = bounds.position.y + bounds.size.y - epsilon;
 
     int min_gx = to_cell(x1, CELL_SIZE);
     int max_gx = to_cell(x2, CELL_SIZE);
@@ -34,8 +37,17 @@ void PhysicsServer2D::add_static_box(uint64_t id, const Rect2Fixed& bounds) {
     }
 }
 
+void PhysicsServer2D::register_active_body(uint64_t id, Node2D* node, const Rect2Fixed& bounds) {
+    active_bodies[id] = ActiveBodyInfo{id, node, bounds};
+}
+
+void PhysicsServer2D::unregister_active_body(uint64_t id) {
+    active_bodies.erase(id);
+}
+
 void PhysicsServer2D::clear() {
     static_bodies.clear();
+    active_bodies.clear();
     spatial_grid.clear();
 }
 
@@ -43,10 +55,11 @@ std::vector<size_t> PhysicsServer2D::get_nearby_body_indices(const Rect2Fixed& b
     std::vector<size_t> nearby;
     std::unordered_set<size_t> visited;
 
-    float x1 = bounds.position.x.to_float();
-    float y1 = bounds.position.y.to_float();
-    float x2 = x1 + bounds.size.x.to_float() - 0.01f;
-    float y2 = y1 + bounds.size.y.to_float() - 0.01f;
+    Fixed16 epsilon = Fixed16::from_raw(1);
+    Fixed16 x1 = bounds.position.x;
+    Fixed16 y1 = bounds.position.y;
+    Fixed16 x2 = bounds.position.x + bounds.size.x - epsilon;
+    Fixed16 y2 = bounds.position.y + bounds.size.y - epsilon;
 
     int min_gx = to_cell(x1, CELL_SIZE);
     int max_gx = to_cell(x2, CELL_SIZE);
@@ -67,6 +80,18 @@ std::vector<size_t> PhysicsServer2D::get_nearby_body_indices(const Rect2Fixed& b
         }
     }
     return nearby;
+}
+
+std::vector<Node2D*> PhysicsServer2D::get_overlapping_bodies_for_box(const Rect2Fixed& bounds, Node2D* self) const {
+    std::vector<Node2D*> result;
+    for (const auto& pair : active_bodies) {
+        const auto& info = pair.second;
+        if (!info.node || info.node == self) continue;
+        if (bounds.intersects(info.bounds)) {
+            result.push_back(info.node);
+        }
+    }
+    return result;
 }
 
 Vector2Fixed PhysicsServer2D::move_and_slide(uint64_t body_id, Vector2Fixed position, Vector2Fixed size, Vector2Fixed velocity, Fixed16 delta) {

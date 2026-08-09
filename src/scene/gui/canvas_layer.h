@@ -10,10 +10,12 @@ class RN_API CanvasLayer : public Node {
 
 public:
     int layer = 1;
-    bool visible = true;
 
     CanvasLayer();
     virtual ~CanvasLayer() = default;
+
+    void set_layer(int p_layer) { layer = p_layer; }
+    int get_layer() const { return layer; }
 
     virtual void _process(float delta) override;
 };

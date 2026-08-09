@@ -20,6 +20,7 @@ class RN_API GameModuleLoader {
 private:
     std::string module_path;
     std::string temp_module_path;
+    std::string scene_path;
     ModuleHandle handle = nullptr;
     uint64_t last_modified_time = 0;
 
@@ -29,6 +30,7 @@ public:
     GameModuleLoader(const std::string& p_module_path);
     ~GameModuleLoader();
 
+    void set_scene_path(const std::string& p_scene_path) { scene_path = p_scene_path; }
     bool load_module();
     void unload_module();
     bool check_and_hot_reload();

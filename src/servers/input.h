@@ -28,6 +28,7 @@ public:
     void handle_event(const SDL_Event& event);
     bool is_action_pressed(const StringName& action) const;
     void set_action_state(const StringName& action, bool pressed);
+    void bind_action(SDL_Keycode key, const StringName& action);
 };
 
 } // namespace RetroNode

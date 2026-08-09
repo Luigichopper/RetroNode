@@ -20,6 +20,11 @@ Input::Input() {
 
     key_mappings[SDLK_SPACE] = StringName("ui_accept");
     key_mappings[SDLK_RETURN] = StringName("ui_accept");
+
+    // Game action & debug overlay toggles
+    key_mappings[SDLK_F3] = StringName("toggle_debug");
+    key_mappings[SDLK_Z] = StringName("action_attack");
+    key_mappings[SDLK_J] = StringName("action_attack");
 }
 
 void Input::handle_event(const SDL_Event& event) {
@@ -42,6 +47,10 @@ bool Input::is_action_pressed(const StringName& action) const {
 
 void Input::set_action_state(const StringName& action, bool pressed) {
     action_states[action] = pressed;
+}
+
+void Input::bind_action(SDL_Keycode key, const StringName& action) {
+    key_mappings[key] = action;
 }
 
 } // namespace RetroNode

@@ -35,6 +35,14 @@ void AudioServer::init() {
 }
 
 void AudioServer::shutdown() {
+    for (SDL_AudioStream* st : active_streams) {
+        if (st) {
+            SDL_UnbindAudioStream(st);
+            SDL_DestroyAudioStream(st);
+        }
+    }
+    active_streams.clear();
+
     if (stream) {
         SDL_UnbindAudioStream(stream);
         SDL_DestroyAudioStream(stream);
@@ -54,6 +62,21 @@ void AudioServer::shutdown() {
     samples.clear();
     path_to_id.clear();
     samples.push_back({0, "", nullptr, 0, {}});
+}
+
+void AudioServer::clean_finished_streams() {
+    auto it = active_streams.begin();
+    while (it != active_streams.end()) {
+        if (*it) {
+            if (SDL_GetAudioStreamQueued(*it) == 0) {
+                SDL_UnbindAudioStream(*it);
+                SDL_DestroyAudioStream(*it);
+                it = active_streams.erase(it);
+                continue;
+            }
+        }
+        ++it;
+    }
 }
 
 uint32_t AudioServer::load_sound(const std::string& filepath) {
@@ -106,6 +129,8 @@ uint32_t AudioServer::load_sound(const std::string& filepath) {
 }
 
 void AudioServer::play_sound(uint32_t sound_id, float volume) {
+    clean_finished_streams();
+
     if (sound_id == 0 || sound_id >= samples.size()) return;
     if (!audio_device) return;
 
@@ -146,6 +171,7 @@ void AudioServer::play_sound(uint32_t sound_id, float volume) {
     }
 
     SDL_FlushAudioStream(sound_stream);
+    active_streams.push_back(sound_stream);
     std::cout << "[AudioServer] Playing sound [" << sound_id << "]: " << s.path << std::endl;
 }
 

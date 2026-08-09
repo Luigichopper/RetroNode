@@ -15,7 +15,6 @@ public:
     Vector2Fixed previous_position;
     Vector2Fixed size;
     int z_index = 100;
-    bool visible = true;
 
     Control();
     virtual ~Control() = default;

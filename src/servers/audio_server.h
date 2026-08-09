@@ -22,10 +22,13 @@ private:
     static AudioServer* instance;
     SDL_AudioDeviceID audio_device = 0;
     SDL_AudioStream* stream = nullptr;
+    std::vector<SDL_AudioStream*> active_streams;
 
     std::vector<SoundSample> samples;
     std::unordered_map<std::string, uint32_t> path_to_id;
     std::string project_dir = "./MyRPG";
+
+    void clean_finished_streams();
 
 public:
     AudioServer();

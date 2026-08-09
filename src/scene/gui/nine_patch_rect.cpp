@@ -19,6 +19,7 @@ void NinePatchRect::set_texture_path(const std::string& path) {
 
 void NinePatchRect::_process(float delta) {
     (void)delta;
+    if (!is_visible_in_tree()) return;
 
     Vector2Fixed global_pos = get_global_control_position();
     Vector2Fixed global_prev_pos = get_global_control_previous_position();

@@ -24,7 +24,9 @@
 #include "servers/audio_server.h"
 #include "game_module.h"
 
+#include <nlohmann/json.hpp>
 #include <iostream>
+#include <fstream>
 #include <filesystem>
 #include <vector>
 
@@ -82,23 +84,42 @@ std::string resolve_project_dir(const std::string& input_dir, int argc, char* ar
 }
 
 std::string find_game_dll(const std::string& proj_dir) {
-    std::vector<std::string> candidates = {
-        proj_dir + "/bin/Debug/game.dll",
-        proj_dir + "/bin/game.dll",
-        proj_dir + "/bin/Release/game.dll",
-        "./MyRPG/bin/Debug/game.dll",
-        "../MyRPG/bin/Debug/game.dll",
-        "../../MyRPG/bin/Debug/game.dll",
-        "./game.dll"
+    std::vector<std::string> search_dirs = {
+        proj_dir + "/bin/Debug",
+        proj_dir + "/bin",
+        proj_dir + "/bin/Release",
+        "./MyRPG/bin/Debug",
+        "../MyRPG/bin/Debug",
+        "../../MyRPG/bin/Debug",
+        "."
     };
 
-    for (const auto& path : candidates) {
-        if (fs::exists(path)) {
-            return path;
+    std::vector<std::string> file_names = {
+#if defined(_WIN32)
+        "game.dll", "libgame.dll", "game.so", "libgame.so"
+#elif defined(__APPLE__)
+        "libgame.dylib", "game.dylib", "libgame.so", "game.so", "game.dll"
+#else
+        "libgame.so", "game.so", "game.dll", "libgame.dylib"
+#endif
+    };
+
+    for (const auto& dir : search_dirs) {
+        for (const auto& fname : file_names) {
+            std::string candidate = dir + "/" + fname;
+            if (fs::exists(candidate)) {
+                return candidate;
+            }
         }
     }
 
+#if defined(_WIN32)
     return proj_dir + "/bin/Debug/game.dll";
+#elif defined(__APPLE__)
+    return proj_dir + "/bin/libgame.dylib";
+#else
+    return proj_dir + "/bin/libgame.so";
+#endif
 }
 
 std::string find_scene_file(const std::string& proj_dir) {
@@ -148,6 +169,43 @@ int main(int argc, char* argv[]) {
     std::string project_dir = resolve_project_dir(specified_dir, argc, argv);
     std::string game_dll_path = find_game_dll(project_dir);
 
+    // Parse project.rnode configuration file
+    std::string project_name = "MyRPG";
+    std::string configured_main_scene = "";
+    int window_width = 1024;
+    int window_height = 896;
+    int virtual_width = 256;
+    int virtual_height = 224;
+    int target_fps = 60;
+
+    std::string rnode_path = project_dir + "/project.rnode";
+    if (fs::exists(rnode_path)) {
+        try {
+            std::ifstream rnode_file(rnode_path);
+            if (rnode_file.is_open()) {
+                nlohmann::json config;
+                rnode_file >> config;
+                if (config.contains("name") && config["name"].is_string()) {
+                    project_name = config["name"];
+                }
+                if (config.contains("main_scene") && config["main_scene"].is_string()) {
+                    configured_main_scene = config["main_scene"];
+                }
+                if (config.contains("display") && config["display"].is_object()) {
+                    const auto& disp = config["display"];
+                    window_width = disp.value("window_width", window_width);
+                    window_height = disp.value("window_height", window_height);
+                    virtual_width = disp.value("virtual_width", virtual_width);
+                    virtual_height = disp.value("virtual_height", virtual_height);
+                    target_fps = disp.value("target_fps", target_fps);
+                }
+                std::cout << "[RetroNode Engine] Parsed project configuration from: " << rnode_path << std::endl;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[RetroNode Engine] Warning parsing project.rnode: " << e.what() << std::endl;
+        }
+    }
+
     std::cout << "[RetroNode Engine] Project directory: " << project_dir << std::endl;
     std::cout << "[RetroNode Engine] Game module path:  " << game_dll_path << std::endl;
 
@@ -164,13 +222,11 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    const int WINDOW_WIDTH = 1024;
-    const int WINDOW_HEIGHT = 896;
-
+    std::string window_title = "RetroNode Engine - " + project_name;
     SDL_Window* window = SDL_CreateWindow(
-        "RetroNode Engine - MyRPG",
-        WINDOW_WIDTH,
-        WINDOW_HEIGHT,
+        window_title.c_str(),
+        window_width,
+        window_height,
         SDL_WINDOW_RESIZABLE
     );
 
@@ -191,13 +247,35 @@ int main(int argc, char* argv[]) {
     // Enable VSync to cap framerate and eliminate 100% CPU busy-wait spin
     SDL_SetRenderVSync(renderer, 1);
 
-    VisualServer::get()->init(renderer, 256, 224);
+    VisualServer::get()->init(renderer, virtual_width, virtual_height);
 
     // Auto-load texture atlas manifest if present
     TextureServer::get()->load_atlas_manifest("res://assets/atlas.json");
 
-    // Load initial scene from JSON
-    std::string scene_path = find_scene_file(project_dir);
+    // Resolve initial scene path
+    std::string scene_path = "";
+    if (!configured_main_scene.empty()) {
+        std::string resolved_path = configured_main_scene;
+        if (resolved_path.rfind("res://", 0) == 0) {
+            resolved_path = resolved_path.substr(6);
+        }
+        std::string full_path = project_dir + "/" + resolved_path;
+        if (full_path.length() > 5 && full_path.substr(full_path.length() - 5) == ".json") {
+            std::string rnb_path = full_path.substr(0, full_path.length() - 5) + ".rnb";
+            if (fs::exists(rnb_path)) {
+                scene_path = rnb_path;
+            }
+        }
+        if (scene_path.empty() && fs::exists(full_path)) {
+            scene_path = full_path;
+        }
+    }
+    if (scene_path.empty()) {
+        scene_path = find_scene_file(project_dir);
+    }
+
+    module_loader.set_scene_path(scene_path);
+
     Node* root_scene = SceneLoader::load_scene_from_file(scene_path);
     if (root_scene) {
         SceneTree::get()->set_root(root_scene);
@@ -206,7 +284,8 @@ int main(int argc, char* argv[]) {
         std::cerr << "[RetroNode Engine] Warning: Could not load scene " << scene_path << std::endl;
     }
 
-    const Fixed16 FIXED_DT = Fixed16::from_float(1.0f / 60.0f);
+    float fps_dt = (target_fps > 0) ? (1.0f / static_cast<float>(target_fps)) : (1.0f / 60.0f);
+    const Fixed16 FIXED_DT = Fixed16::from_float(fps_dt);
     const float FIXED_DT_FLOAT = FIXED_DT.to_float();
     const Fixed16 MAX_FRAME_TIME = Fixed16::from_float(0.25f);
     Fixed16 accumulator = Fixed16(0);
@@ -242,7 +321,7 @@ int main(int argc, char* argv[]) {
         // Clear render queue once per frame before physics & frame process
         VisualServer::get()->clear_render_queue();
 
-        // Fixed 60Hz Physics Step
+        // Fixed Physics Step
         while (accumulator >= FIXED_DT) {
             SceneTree::get()->physics_process(FIXED_DT);
             accumulator -= FIXED_DT;

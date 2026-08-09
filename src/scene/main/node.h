@@ -20,6 +20,7 @@ protected:
     Node* parent = nullptr;
     std::vector<Node*> children;
     bool is_queued_for_deletion = false;
+    bool visible = true;
 
 public:
     Node();
@@ -31,15 +32,36 @@ public:
     Node* get_parent() const { return parent; }
     const std::vector<Node*>& get_children() const { return children; }
 
+    void set_visible(bool p_visible) { visible = p_visible; }
+    bool is_visible() const { return visible; }
+    bool is_visible_in_tree() const {
+        if (!visible) return false;
+        if (parent) return parent->is_visible_in_tree();
+        return true;
+    }
+
+    class CanvasLayer* get_canvas_layer() const;
+
     void add_child(Node* child);
     void remove_child(Node* child);
 
     template<typename T>
     T* get_node(const std::string& path) const {
+        if (path.empty()) return nullptr;
+        size_t slash = path.find('/');
+        if (slash == std::string::npos) {
+            for (Node* child : children) {
+                if (child->get_name() == path) {
+                    return dynamic_cast<T*>(child);
+                }
+            }
+            return nullptr;
+        }
+        std::string first = path.substr(0, slash);
+        std::string rest = path.substr(slash + 1);
         for (Node* child : children) {
-            if (child->get_name() == path) {
-                T* typed = dynamic_cast<T*>(child);
-                if (typed) return typed;
+            if (child->get_name() == first) {
+                return child->get_node<T>(rest);
             }
         }
         return nullptr;

@@ -1,4 +1,5 @@
 #include "node.h"
+#include "../gui/canvas_layer.h"
 #include <algorithm>
 
 namespace RetroNode {
@@ -10,6 +11,16 @@ Node::~Node() {
         delete child;
     }
     children.clear();
+}
+
+CanvasLayer* Node::get_canvas_layer() const {
+    const Node* curr = this;
+    while (curr) {
+        const CanvasLayer* cl = dynamic_cast<const CanvasLayer*>(curr);
+        if (cl) return const_cast<CanvasLayer*>(cl);
+        curr = curr->get_parent();
+    }
+    return nullptr;
 }
 
 void Node::add_child(Node* child) {
@@ -31,22 +42,31 @@ void Node::remove_child(Node* child) {
 
 void Node::propagate_ready() {
     _ready();
-    for (Node* child : children) {
-        child->propagate_ready();
+    auto children_copy = children;
+    for (Node* child : children_copy) {
+        if (child && !child->is_free_queued()) {
+            child->propagate_ready();
+        }
     }
 }
 
 void Node::propagate_physics_process(Fixed16 delta) {
     _physics_process(delta);
-    for (Node* child : children) {
-        child->propagate_physics_process(delta);
+    auto children_copy = children;
+    for (Node* child : children_copy) {
+        if (child && !child->is_free_queued()) {
+            child->propagate_physics_process(delta);
+        }
     }
 }
 
 void Node::propagate_process(float delta) {
     _process(delta);
-    for (Node* child : children) {
-        child->propagate_process(delta);
+    auto children_copy = children;
+    for (Node* child : children_copy) {
+        if (child && !child->is_free_queued()) {
+            child->propagate_process(delta);
+        }
     }
 }
 

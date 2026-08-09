@@ -3,11 +3,16 @@
 
 #include "../2d/node_2d.h"
 #include "../../core/math/vector2.h"
+#include "collision_shape_2d.h"
+#include <vector>
 
 namespace RetroNode {
 
 class RN_API CharacterBody2D : public Node2D {
     RN_CLASS(CharacterBody2D, Node2D)
+
+private:
+    std::vector<CollisionShape2D*> collision_shapes;
 
 public:
     Vector2Fixed velocity;
@@ -17,6 +22,10 @@ public:
     CharacterBody2D();
     virtual ~CharacterBody2D() = default;
 
+    virtual void _ready() override;
+    void update_shapes();
+    const std::vector<CollisionShape2D*>& get_collision_shapes() const { return collision_shapes; }
+
     void move_and_slide();
     virtual void _physics_process(Fixed16 delta) override;
 };
@@ -24,3 +33,4 @@ public:
 } // namespace RetroNode
 
 #endif // RETRONODE_CHARACTER_BODY_2D_H
+

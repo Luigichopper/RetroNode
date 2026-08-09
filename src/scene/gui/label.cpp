@@ -108,6 +108,7 @@ void Label::_ready() {
 
 void Label::_process(float delta) {
     (void)delta;
+    if (!is_visible_in_tree()) return;
     if (text.empty()) return;
 
     Vector2Fixed global_pos = get_global_control_position();

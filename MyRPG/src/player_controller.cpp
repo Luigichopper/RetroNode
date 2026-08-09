@@ -78,5 +78,3 @@ void PlayerController::update_animation() {
       sprite->play("idle_down");
   }
 }
-
-RN_REGISTER_CLASS(PlayerController);

@@ -4,41 +4,59 @@
 #include <string>
 #include <functional>
 
+#if defined(_WIN32)
+  #ifdef RN_BUILD_ENGINE
+    #define RN_API __declspec(dllexport)
+  #else
+    #define RN_API __declspec(dllimport)
+  #endif
+#else
+  #define RN_API __attribute__((visibility("default")))
+#endif
+
 namespace RetroNode {
 
 /**
  * @brief High-performance interned string identifier for ClassDB, Scene Tree, and Input actions.
  */
-class StringName {
+class RN_API StringName {
 private:
-    std::string name;
-    size_t hash_value;
+    const std::string* data_ptr = nullptr;
+    size_t hash_value = 0;
+
+    static const std::string* intern(const std::string& str);
+    static const std::string& get_empty_string();
 
 public:
-    StringName() noexcept : name(""), hash_value(std::hash<std::string>{}("")) {}
-    StringName(const char* str) : name(str ? str : ""), hash_value(std::hash<std::string>{}(name)) {}
-    StringName(const std::string& str) : name(str), hash_value(std::hash<std::string>{}(name)) {}
-    StringName(std::string&& str) noexcept : name(std::move(str)), hash_value(std::hash<std::string>{}(name)) {}
+    StringName() noexcept : data_ptr(intern("")), hash_value(std::hash<std::string>{}("")) {}
+    
+    StringName(const char* str) 
+        : data_ptr(intern(str ? str : "")), hash_value(std::hash<std::string>{}(*data_ptr)) {}
+    
+    StringName(const std::string& str) 
+        : data_ptr(intern(str)), hash_value(std::hash<std::string>{}(*data_ptr)) {}
 
     /// Returns standard null-terminated C-string pointer
-    const char* c_str() const noexcept { return name.c_str(); }
+    const char* c_str() const noexcept { return data_ptr ? data_ptr->c_str() : ""; }
     
     /// Returns reference to internal std::string
-    const std::string& as_string() const noexcept { return name; }
-    const std::string& str() const noexcept { return name; }
+    const std::string& as_string() const noexcept { return data_ptr ? *data_ptr : get_empty_string(); }
+    const std::string& str() const noexcept { return as_string(); }
 
     size_t hash() const noexcept { return hash_value; }
 
+    // O(1) fast pointer comparison for interned strings
     bool operator==(const StringName& o) const noexcept {
-        return hash_value == o.hash_value && name == o.name;
+        return data_ptr == o.data_ptr;
     }
 
     bool operator!=(const StringName& o) const noexcept {
-        return !(*this == o);
+        return data_ptr != o.data_ptr;
     }
 
     bool operator<(const StringName& o) const noexcept {
-        return name < o.name;
+        if (data_ptr == o.data_ptr) return false;
+        return as_string() < o.as_string();
     }
 };
 

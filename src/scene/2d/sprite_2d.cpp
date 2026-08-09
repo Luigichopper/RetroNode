@@ -24,6 +24,7 @@ void Sprite2D::set_texture_path(const std::string& path) {
 
 void Sprite2D::_process(float delta) {
     (void)delta;
+    if (!is_visible_in_tree()) return;
     Vector2Fixed global_pos = get_global_position();
     Vector2Fixed global_prev_pos = get_global_previous_position();
 
