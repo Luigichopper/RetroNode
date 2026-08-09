@@ -40,6 +40,8 @@ set(ENGINE_CORE_SOURCES
     src/core/string_names.cpp
     src/core/object/object.cpp
     src/core/object/class_db.cpp
+    src/core/resource/gradient.cpp
+    src/core/resource/curve.cpp
     src/servers/input.cpp
     src/servers/visual_server.cpp
     src/servers/texture_server.cpp
@@ -52,6 +54,7 @@ set(ENGINE_CORE_SOURCES
     src/scene/2d/sprite_2d.cpp
     src/scene/2d/tile_map_layer.cpp
     src/scene/2d/camera_2d.cpp
+    src/scene/2d/cpu_particles_2d.cpp
     src/scene/physics/character_body_2d.cpp
     src/scene/physics/collision_shape_2d.cpp
     src/scene/physics/static_body_2d.cpp

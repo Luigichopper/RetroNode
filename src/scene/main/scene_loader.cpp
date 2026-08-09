@@ -4,6 +4,7 @@
 #include "../2d/node_2d.h"
 #include "../2d/sprite_2d.h"
 #include "../2d/tile_map_layer.h"
+#include "../2d/cpu_particles_2d.h"
 #include "../animation/animation_player.h"
 #include "../audio/audio_stream_player.h"
 #include "../gui/canvas_layer.h"
@@ -242,6 +243,97 @@ static Node *parse_node_internal(const json &j) {
       if (props.contains("radius")) {
         float rad = props.value("radius", 8.0f);
         col_shape->set_radius(Fixed16::from_float(rad));
+      }
+    }
+
+    CPUParticles2D *particles = dynamic_cast<CPUParticles2D *>(node);
+    if (particles) {
+      if (props.contains("amount")) {
+        particles->set_amount(props.value("amount", 16));
+      }
+      if (props.contains("emitting")) {
+        particles->emitting = props.value("emitting", true);
+      }
+      if (props.contains("lifetime")) {
+        particles->lifetime = Fixed16::from_float(props.value("lifetime", 1.0f));
+      }
+      if (props.contains("one_shot")) {
+        particles->one_shot = props.value("one_shot", false);
+      }
+      if (props.contains("speed_scale")) {
+        particles->speed_scale = Fixed16::from_float(props.value("speed_scale", 1.0f));
+      }
+      if (props.contains("explosiveness")) {
+        particles->explosiveness = Fixed16::from_float(props.value("explosiveness", 0.0f));
+      }
+      if (props.contains("randomness")) {
+        particles->randomness = Fixed16::from_float(props.value("randomness", 0.0f));
+      }
+      if (props.contains("local_coords")) {
+        particles->local_coords = props.value("local_coords", true);
+      }
+      if (props.contains("z_index")) {
+        particles->z_index = props.value("z_index", 10);
+      }
+      if (props.contains("texture")) {
+        particles->set_texture_path(props["texture"]);
+      }
+      if (props.contains("gravity")) {
+        float gx = props["gravity"].value("x", 0.0f);
+        float gy = props["gravity"].value("y", 98.0f);
+        particles->gravity = Vector2Fixed::from_floats(gx, gy);
+      }
+      if (props.contains("direction")) {
+        float dx = props["direction"].value("x", 1.0f);
+        float dy = props["direction"].value("y", 0.0f);
+        particles->direction = Vector2Fixed::from_floats(dx, dy);
+      }
+      if (props.contains("spread")) {
+        particles->spread = Fixed16::from_float(props.value("spread", 45.0f));
+      }
+      if (props.contains("initial_velocity_min")) {
+        particles->initial_velocity_min = Fixed16::from_float(props.value("initial_velocity_min", 16.0f));
+      }
+      if (props.contains("initial_velocity_max")) {
+        particles->initial_velocity_max = Fixed16::from_float(props.value("initial_velocity_max", 32.0f));
+      }
+      if (props.contains("scale_amount_min")) {
+        particles->scale_amount_min = Fixed16::from_float(props.value("scale_amount_min", 4.0f));
+      }
+      if (props.contains("scale_amount_max")) {
+        particles->scale_amount_max = Fixed16::from_float(props.value("scale_amount_max", 4.0f));
+      }
+      if (props.contains("color")) {
+        uint8_t cr = props["color"].value("r", 255);
+        uint8_t cg = props["color"].value("g", 255);
+        uint8_t cb = props["color"].value("b", 255);
+        uint8_t ca = props["color"].value("a", 255);
+        particles->color = {cr, cg, cb, ca};
+      }
+      if (props.contains("color_ramp") && props["color_ramp"].is_array()) {
+        if (!particles->color_ramp) {
+          particles->color_ramp = new Gradient();
+          particles->color_ramp->clear();
+        }
+        for (const auto &pt : props["color_ramp"]) {
+          float offset = pt.value("offset", 0.0f);
+          uint8_t r = pt.value("r", 255);
+          uint8_t g = pt.value("g", 255);
+          uint8_t b = pt.value("b", 255);
+          uint8_t a = pt.value("a", 255);
+          particles->color_ramp->add_point(offset, {r, g, b, a});
+        }
+      }
+      if (props.contains("scale_curve") && props["scale_curve"].is_array()) {
+        if (!particles->scale_amount_curve) {
+          particles->scale_amount_curve = new Curve();
+          particles->scale_amount_curve->clear();
+        }
+        for (const auto &pt : props["scale_curve"]) {
+          float pos = pt.value("position", 0.0f);
+          float val = pt.value("val", 1.0f);
+          particles->scale_amount_curve->add_point(pos, val);
+        }
       }
     }
   }

@@ -53,6 +53,29 @@
       }
     },
     {
+      "name": "TorchParticles",
+      "type": "CPUParticles2D",
+      "properties": {
+        "position": {"x": 128, "y": 90},
+        "amount": 24,
+        "emitting": true,
+        "lifetime": 1.2,
+        "gravity": {"x": 0.0, "y": -40.0},
+        "direction": {"x": 0.0, "y": -1.0},
+        "spread": 30.0,
+        "initial_velocity_min": 10.0,
+        "initial_velocity_max": 25.0,
+        "scale_amount_min": 3.0,
+        "scale_amount_max": 5.0,
+        "color": {"r": 255, "g": 160, "b": 40, "a": 255},
+        "color_ramp": [
+          {"offset": 0.0, "r": 255, "g": 200, "b": 50, "a": 255},
+          {"offset": 0.5, "r": 255, "g": 80, "b": 20, "a": 220},
+          {"offset": 1.0, "r": 50, "g": 50, "b": 50, "a": 0}
+        ]
+      }
+    },
+    {
       "name": "UI_HUD",
       "type": "CanvasLayer",
       "children": [
