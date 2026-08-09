@@ -7,6 +7,7 @@
 #include <vector>
 #include "../core/object/class_db.h"
 #include "../core/math/vector2.h"
+#include "../core/math/rect2.h"
 
 namespace RetroNode {
 
@@ -18,11 +19,17 @@ struct TextureData {
     int height;
 };
 
+struct AtlasRegion {
+    uint32_t texture_id;
+    Rect2Fixed rect;
+};
+
 class RN_API TextureServer {
 private:
     static TextureServer* instance;
     std::vector<TextureData> textures;
     std::unordered_map<std::string, uint32_t> path_to_id;
+    std::unordered_map<std::string, AtlasRegion> atlas_regions;
     SDL_Renderer* renderer = nullptr;
     std::string project_dir = "./MyRPG";
 
@@ -46,8 +53,12 @@ public:
     uint32_t load_texture(const std::string& filepath);
     uint32_t create_procedural_texture(const std::string& name, int width, int height, const uint8_t* rgba_pixels);
 
+    bool load_atlas_manifest(const std::string& manifest_path);
+    bool get_atlas_region(const std::string& region_name, uint32_t& out_texture_id, Rect2Fixed& out_rect) const;
+
     SDL_Texture* get_texture(uint32_t texture_id) const;
     Vector2Fixed get_texture_size(uint32_t texture_id) const;
+    size_t get_texture_count() const { return textures.size() > 0 ? textures.size() - 1 : 0; }
 };
 
 } // namespace RetroNode

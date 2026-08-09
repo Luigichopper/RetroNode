@@ -1,0 +1,26 @@
+{
+  "name": "Hero",
+  "type": "CharacterBody2D",
+  "script": "PlayerController",
+  "children": [
+    {
+      "name": "Sprite",
+      "type": "AnimatedSprite2D",
+      "properties": {
+        "texture": "res://assets/sprites/hero.png"
+      }
+    },
+    {
+      "name": "Camera",
+      "type": "Camera2D"
+    },
+    {
+      "name": "HurtAudio",
+      "type": "AudioStreamPlayer",
+      "properties": {
+        "stream": "res://assets/audio/hurt_1.wav",
+        "volume": 1.0
+      }
+    }
+  ]
+}

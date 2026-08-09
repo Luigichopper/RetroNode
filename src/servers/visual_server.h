@@ -31,6 +31,7 @@ private:
 
     Vector2Fixed camera_offset;
     std::vector<DrawCommand> render_queue;
+    size_t last_draw_call_count = 0;
 
 public:
     VisualServer();
@@ -48,6 +49,8 @@ public:
 
     void set_camera_offset(const Vector2Fixed& offset) { camera_offset = offset; }
     Vector2Fixed get_camera_offset() const { return camera_offset; }
+
+    size_t get_draw_call_count() const { return last_draw_call_count; }
 
     void clear_render_queue() { render_queue.clear(); }
     void submit_draw_sprite(

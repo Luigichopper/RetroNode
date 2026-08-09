@@ -113,6 +113,7 @@ void VisualServer::render(float alpha) {
         }
     }
 
+    last_draw_call_count = render_queue.size();
     render_queue.clear();
 
     // 2. Blit Virtual Framebuffer to Window Screen with Integer Scaling

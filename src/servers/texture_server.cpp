@@ -2,9 +2,12 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#include <nlohmann/json.hpp>
 #include <iostream>
+#include <fstream>
 #include <filesystem>
 
+using json = nlohmann::json;
 namespace fs = std::filesystem;
 
 namespace RetroNode {
@@ -32,6 +35,7 @@ void TextureServer::shutdown() {
     }
     textures.clear();
     path_to_id.clear();
+    atlas_regions.clear();
     textures.push_back({0, "", nullptr, 0, 0});
 }
 
@@ -148,6 +152,58 @@ uint32_t TextureServer::create_procedural_texture(const std::string& name, int w
 
     std::cout << "[TextureServer] Created procedural texture [" << new_id << "]: " << name << " (" << width << "x" << height << ")" << std::endl;
     return new_id;
+}
+
+bool TextureServer::load_atlas_manifest(const std::string& manifest_path) {
+    std::string resolved_path = manifest_path;
+    if (resolved_path.rfind("res://", 0) == 0) {
+        resolved_path = resolved_path.substr(6);
+    }
+
+    std::string final_path = project_dir + "/" + resolved_path;
+    if (!fs::exists(final_path)) {
+        final_path = manifest_path;
+    }
+
+    std::ifstream file(final_path);
+    if (!file.is_open()) return false;
+
+    try {
+        json j;
+        file >> j;
+
+        uint32_t atlas_tex_id = load_texture("res://assets/atlas.png");
+
+        if (j.contains("regions") && j["regions"].is_object()) {
+            for (auto& [reg_name, reg_data] : j["regions"].items()) {
+                float rx = reg_data.value("x", 0.0f);
+                float ry = reg_data.value("y", 0.0f);
+                float rw = reg_data.value("w", 16.0f);
+                float rh = reg_data.value("h", 16.0f);
+
+                AtlasRegion reg = {
+                    atlas_tex_id,
+                    Rect2Fixed::from_floats(rx, ry, rw, rh)
+                };
+                atlas_regions[reg_name] = reg;
+            }
+            std::cout << "[TextureServer] Loaded atlas manifest: " << final_path << " (" << atlas_regions.size() << " regions)" << std::endl;
+            return true;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[TextureServer] Error parsing atlas JSON: " << e.what() << std::endl;
+    }
+    return false;
+}
+
+bool TextureServer::get_atlas_region(const std::string& region_name, uint32_t& out_texture_id, Rect2Fixed& out_rect) const {
+    auto it = atlas_regions.find(region_name);
+    if (it != atlas_regions.end()) {
+        out_texture_id = it->second.texture_id;
+        out_rect = it->second.rect;
+        return true;
+    }
+    return false;
 }
 
 SDL_Texture* TextureServer::get_texture(uint32_t texture_id) const {

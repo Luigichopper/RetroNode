@@ -43,6 +43,7 @@ set(ENGINE_CORE_SOURCES
     src/servers/visual_server.cpp
     src/servers/texture_server.cpp
     src/servers/physics_server.cpp
+    src/servers/audio_server.cpp
     src/scene/main/node.cpp
     src/scene/main/scene_tree.cpp
     src/scene/main/scene_loader.cpp
@@ -51,6 +52,12 @@ set(ENGINE_CORE_SOURCES
     src/scene/2d/tile_map_layer.cpp
     src/scene/2d/camera_2d.cpp
     src/scene/physics/character_body_2d.cpp
+    src/scene/gui/control.cpp
+    src/scene/gui/canvas_layer.cpp
+    src/scene/gui/label.cpp
+    src/scene/gui/nine_patch_rect.cpp
+    src/scene/gui/debug_overlay.cpp
+    src/scene/audio/audio_stream_player.cpp
 )
 
 add_library(retronode_core SHARED ${ENGINE_CORE_SOURCES})
@@ -84,9 +91,24 @@ set_target_properties(retronode_core PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Debug"
 )
 
+# Automated Asset Compilation Target (runs texture_packer & map_compiler)
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+if (Python3_FOUND)
+    add_custom_target(compile_game_assets ALL
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tools/texture_packer.py ${CMAKE_CURRENT_SOURCE_DIR}/MyRPG
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tools/map_compiler.py ${CMAKE_CURRENT_SOURCE_DIR}/MyRPG/scenes/player.json ${CMAKE_CURRENT_SOURCE_DIR}/MyRPG/scenes/player.rnb
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tools/map_compiler.py ${CMAKE_CURRENT_SOURCE_DIR}/MyRPG/scenes/overworld.json ${CMAKE_CURRENT_SOURCE_DIR}/MyRPG/scenes/overworld.rnb
+        COMMENT "Auto-compiling sprite atlases and binary maps..."
+    )
+endif()
+
 # Engine Main Executable
 add_executable(retronode src/platform/main.cpp)
 target_link_libraries(retronode PRIVATE retronode_core)
+
+if (TARGET compile_game_assets)
+    add_dependencies(retronode compile_game_assets)
+endif()
 
 set_target_properties(retronode PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Debug"

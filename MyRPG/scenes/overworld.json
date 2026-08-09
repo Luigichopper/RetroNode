@@ -47,21 +47,49 @@
     {
       "name": "Hero",
       "type": "CharacterBody2D",
-      "script": "PlayerController",
+      "instance": "res://scenes/player.json",
       "properties": {
         "position": {"x": 128, "y": 112}
-      },
+      }
+    },
+    {
+      "name": "UI_HUD",
+      "type": "CanvasLayer",
       "children": [
         {
-          "name": "Sprite",
-          "type": "AnimatedSprite2D",
+          "name": "HPLabel",
+          "type": "Label",
           "properties": {
-            "texture": "res://assets/sprites/hero.png"
+            "position": {"x": 8, "y": 8},
+            "text": "HP: 100/100"
           }
         },
         {
-          "name": "Camera",
-          "type": "Camera2D"
+          "name": "DebugHUD",
+          "type": "DebugOverlay",
+          "properties": {
+            "position": {"x": 128, "y": 8}
+          }
+        },
+        {
+          "name": "DialogBox",
+          "type": "NinePatchRect",
+          "properties": {
+            "position": {"x": 16, "y": 160},
+            "size": {"x": 224, "y": 48},
+            "patch_margin": 4,
+            "texture": "res://assets/gui/dialog_box.png"
+          },
+          "children": [
+            {
+              "name": "DialogText",
+              "type": "Label",
+              "properties": {
+                "position": {"x": 8, "y": 8},
+                "text": "HERO: Overworld is safe!"
+              }
+            }
+          ]
         }
       ]
     }

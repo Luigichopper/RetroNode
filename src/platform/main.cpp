@@ -14,6 +14,13 @@
 #include "scene/2d/tile_map_layer.h"
 #include "scene/physics/character_body_2d.h"
 #include "scene/2d/camera_2d.h"
+#include "scene/gui/control.h"
+#include "scene/gui/canvas_layer.h"
+#include "scene/gui/label.h"
+#include "scene/gui/nine_patch_rect.h"
+#include "scene/gui/debug_overlay.h"
+#include "scene/audio/audio_stream_player.h"
+#include "servers/audio_server.h"
 #include "game_module.h"
 
 #include <iostream>
@@ -31,6 +38,12 @@ void register_engine_classes() {
     RN_REGISTER_CLASS(TileMapLayer);
     RN_REGISTER_CLASS(CharacterBody2D);
     RN_REGISTER_CLASS(Camera2D);
+    RN_REGISTER_CLASS(Control);
+    RN_REGISTER_CLASS(CanvasLayer);
+    RN_REGISTER_CLASS(Label);
+    RN_REGISTER_CLASS(NinePatchRect);
+    RN_REGISTER_CLASS(DebugOverlay);
+    RN_REGISTER_CLASS(AudioStreamPlayer);
 }
 
 std::string resolve_project_dir(const std::string& input_dir, int argc, char* argv[]) {
@@ -88,11 +101,12 @@ std::string find_game_dll(const std::string& proj_dir) {
 
 std::string find_scene_file(const std::string& proj_dir) {
     std::vector<std::string> candidates = {
+        proj_dir + "/scenes/overworld.rnb",
         proj_dir + "/scenes/overworld.json",
+        "./MyRPG/scenes/overworld.rnb",
         "./MyRPG/scenes/overworld.json",
-        "../MyRPG/scenes/overworld.json",
-        "../../MyRPG/scenes/overworld.json",
-        "./scenes/overworld.json"
+        "../MyRPG/scenes/overworld.rnb",
+        "../MyRPG/scenes/overworld.json"
     };
 
     for (const auto& path : candidates) {
@@ -115,6 +129,7 @@ int main(int argc, char* argv[]) {
     PhysicsServer2D::get();
     VisualServer::get();
     TextureServer::get();
+    AudioServer::get();
     SceneTree::get();
 
     register_engine_classes();
@@ -135,6 +150,8 @@ int main(int argc, char* argv[]) {
     std::cout << "[RetroNode Engine] Game module path:  " << game_dll_path << std::endl;
 
     TextureServer::get()->set_project_dir(project_dir);
+    AudioServer::get()->set_project_dir(project_dir);
+    AudioServer::get()->init();
 
     // Load dynamic game logic module
     GameModuleLoader module_loader(game_dll_path);
@@ -173,6 +190,9 @@ int main(int argc, char* argv[]) {
     SDL_SetRenderVSync(renderer, 1);
 
     VisualServer::get()->init(renderer, 256, 224);
+
+    // Auto-load texture atlas manifest if present
+    TextureServer::get()->load_atlas_manifest("res://assets/atlas.json");
 
     // Load initial scene from JSON
     std::string scene_path = find_scene_file(project_dir);

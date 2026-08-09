@@ -6,6 +6,12 @@ PlayerController::PlayerController() { name = "PlayerController"; }
 void PlayerController::_ready() {
   std::cout << "[MyRPG] PlayerController ready!" << std::endl;
   sprite = get_node<AnimatedSprite2D>("Sprite");
+  hurt_audio = get_node<AudioStreamPlayer>("HurtAudio");
+  if (hurt_audio) {
+    std::cout << "[MyRPG] PlayerController successfully bound HurtAudio node." << std::endl;
+  } else {
+    std::cout << "[MyRPG] Warning: HurtAudio node not found on PlayerController!" << std::endl;
+  }
 }
 
 void PlayerController::_physics_process(Fixed16 delta) {
@@ -22,6 +28,17 @@ void PlayerController::_physics_process(Fixed16 delta) {
     vel_y = move_speed;
   if (Input::get()->is_action_pressed(StringName("ui_up")))
     vel_y = -move_speed;
+
+  bool accept_pressed = Input::get()->is_action_pressed(StringName("ui_accept")) ||
+                         Input::get()->is_action_pressed(StringName("action_attack"));
+
+  if (accept_pressed && !was_accept_pressed) {
+    std::cout << "[MyRPG] Spacebar pressed! Triggering hurt_audio..." << std::endl;
+    if (hurt_audio) {
+      hurt_audio->play();
+    }
+  }
+  was_accept_pressed = accept_pressed;
 
   this->velocity.x = vel_x;
   this->velocity.y = vel_y;
