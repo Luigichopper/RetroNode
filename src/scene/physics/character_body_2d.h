@@ -19,6 +19,12 @@ public:
     Vector2Fixed body_size;
     Fixed16 last_delta;
 
+    void set_velocity(const Vector2Fixed& v) { velocity = v; }
+    Vector2Fixed get_velocity() const { return velocity; }
+
+    void set_body_size(const Vector2Fixed& s) { body_size = s; }
+    Vector2Fixed get_body_size() const { return body_size; }
+
     CharacterBody2D();
     virtual ~CharacterBody2D() = default;
 

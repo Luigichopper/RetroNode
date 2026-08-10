@@ -46,6 +46,10 @@ void register_engine_classes() {
         "Node", PropertyInfo{ "name", VariantType::STRING },
         &Node::set_name, &Node::get_name
     );
+    ClassDB::register_property(
+        "Node", PropertyInfo{ "visible", VariantType::BOOL },
+        &Node::set_visible, &Node::is_visible
+    );
 
     RN_REGISTER_CLASS(Timer);
     ClassDB::register_property(
@@ -82,11 +86,78 @@ void register_engine_classes() {
         "Sprite2D", PropertyInfo{ "texture_path", VariantType::STRING, PropertyHint::FILE_PATH, "*.png" },
         &Sprite2D::set_texture_path, &Sprite2D::get_texture_path
     );
+    ClassDB::register_property(
+        "Sprite2D", PropertyInfo{ "z_index", VariantType::INT },
+        &Sprite2D::set_z_index, &Sprite2D::get_z_index
+    );
+    ClassDB::register_property(
+        "Sprite2D", PropertyInfo{ "modulate", VariantType::COLOR },
+        &Sprite2D::set_modulate, &Sprite2D::get_modulate
+    );
 
     RN_REGISTER_CLASS(AnimatedSprite2D);
+    ClassDB::register_property(
+        "AnimatedSprite2D", PropertyInfo{ "current_animation", VariantType::STRING },
+        &AnimatedSprite2D::set_current_animation, &AnimatedSprite2D::get_current_animation
+    );
+
     RN_REGISTER_CLASS(TileMapLayer);
+    ClassDB::register_property(
+        "TileMapLayer", PropertyInfo{ "tileset_path", VariantType::STRING, PropertyHint::FILE_PATH, "*.png" },
+        &TileMapLayer::set_tileset_path, &TileMapLayer::get_tileset_path
+    );
+    ClassDB::register_property(
+        "TileMapLayer", PropertyInfo{ "z_index", VariantType::INT },
+        &TileMapLayer::set_z_index, &TileMapLayer::get_z_index
+    );
+    ClassDB::register_property(
+        "TileMapLayer", PropertyInfo{ "modulate", VariantType::COLOR },
+        &TileMapLayer::set_modulate, &TileMapLayer::get_modulate
+    );
+    ClassDB::register_property(
+        "TileMapLayer", PropertyInfo{ "columns", VariantType::INT },
+        &TileMapLayer::set_columns, &TileMapLayer::get_columns
+    );
+    ClassDB::register_property(
+        "TileMapLayer", PropertyInfo{ "rows", VariantType::INT },
+        &TileMapLayer::set_rows, &TileMapLayer::get_rows
+    );
+    ClassDB::register_property(
+        "TileMapLayer", PropertyInfo{ "tile_size", VariantType::INT },
+        &TileMapLayer::set_tile_size, &TileMapLayer::get_tile_size
+    );
+
     RN_REGISTER_CLASS(CharacterBody2D);
+    ClassDB::register_property(
+        "CharacterBody2D", PropertyInfo{ "velocity", VariantType::VECTOR2 },
+        &CharacterBody2D::set_velocity, &CharacterBody2D::get_velocity
+    );
+    ClassDB::register_property(
+        "CharacterBody2D", PropertyInfo{ "body_size", VariantType::VECTOR2 },
+        &CharacterBody2D::set_body_size, &CharacterBody2D::get_body_size
+    );
+
     RN_REGISTER_CLASS(Camera2D);
+    ClassDB::register_property(
+        "Camera2D", PropertyInfo{ "limit_enabled", VariantType::BOOL },
+        &Camera2D::set_limit_enabled, &Camera2D::is_limit_enabled
+    );
+    ClassDB::register_property(
+        "Camera2D", PropertyInfo{ "limit_left", VariantType::FLOAT16 },
+        &Camera2D::set_limit_left, &Camera2D::get_limit_left
+    );
+    ClassDB::register_property(
+        "Camera2D", PropertyInfo{ "limit_top", VariantType::FLOAT16 },
+        &Camera2D::set_limit_top, &Camera2D::get_limit_top
+    );
+    ClassDB::register_property(
+        "Camera2D", PropertyInfo{ "limit_right", VariantType::FLOAT16 },
+        &Camera2D::set_limit_right, &Camera2D::get_limit_right
+    );
+    ClassDB::register_property(
+        "Camera2D", PropertyInfo{ "limit_bottom", VariantType::FLOAT16 },
+        &Camera2D::set_limit_bottom, &Camera2D::get_limit_bottom
+    );
 
     RN_REGISTER_CLASS(Control);
     ClassDB::register_property(
@@ -113,6 +184,14 @@ void register_engine_classes() {
     ClassDB::register_property(
         "AudioStreamPlayer", PropertyInfo{ "stream_path", VariantType::STRING, PropertyHint::FILE_PATH, "*.wav" },
         &AudioStreamPlayer::set_stream_path, &AudioStreamPlayer::get_stream_path
+    );
+    ClassDB::register_property(
+        "AudioStreamPlayer", PropertyInfo{ "volume", VariantType::FLOAT16 },
+        &AudioStreamPlayer::set_volume, &AudioStreamPlayer::get_volume
+    );
+    ClassDB::register_property(
+        "AudioStreamPlayer", PropertyInfo{ "autoplay", VariantType::BOOL },
+        &AudioStreamPlayer::set_autoplay, &AudioStreamPlayer::has_autoplay
     );
 
     RN_REGISTER_CLASS(AnimationPlayer);

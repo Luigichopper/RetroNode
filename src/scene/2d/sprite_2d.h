@@ -27,6 +27,13 @@ public:
     void set_texture_path(const std::string& path);
     const std::string& get_texture_path() const { return texture_path; }
     Vector2Fixed get_texture_size() const { return texture_size; }
+
+    void set_z_index(int p_z) { z_index = p_z; }
+    int get_z_index() const { return z_index; }
+
+    void set_modulate(const SDL_Color& p_col) { modulate = p_col; }
+    SDL_Color get_modulate() const { return modulate; }
+
     virtual void _process(float delta) override;
 };
 
@@ -39,6 +46,9 @@ private:
 public:
     AnimatedSprite2D();
     virtual ~AnimatedSprite2D() = default;
+
+    void set_current_animation(const std::string& anim_name) { current_animation = anim_name; }
+    const std::string& get_current_animation() const { return current_animation; }
 
     void play(const std::string& anim_name) {
         current_animation = anim_name;

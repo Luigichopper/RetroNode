@@ -99,15 +99,49 @@ void ViewportPanel::draw() {
             if (io.MouseWheel != 0.0f) {
                 camera.adjust_zoom(io.MouseWheel * 0.15f);
             }
-            if (ImGui::IsMouseDown(ImGuiMouseButton_Middle)) {
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Middle) || ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
                 camera.pan.x -= Fixed16::from_float(io.MouseDelta.x / (view_scale_x * camera.zoom));
                 camera.pan.y -= Fixed16::from_float(io.MouseDelta.y / (view_scale_y * camera.zoom));
             }
+
+            // Keyboard WASD / Arrow Key Panning
+            float pan_speed = 6.0f / (view_scale_x * camera.zoom);
+            if (ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_LeftArrow)) camera.pan.x -= Fixed16::from_float(pan_speed);
+            if (ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_RightArrow)) camera.pan.x += Fixed16::from_float(pan_speed);
+            if (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_UpArrow)) camera.pan.y -= Fixed16::from_float(pan_speed);
+            if (ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_DownArrow)) camera.pan.y += Fixed16::from_float(pan_speed);
         }
 
+        // Floating Camera Overlay Toolbar
+        ImGui::SetCursorScreenPos(ImVec2(v_origin.x + 10.0f, v_origin.y + 10.0f));
+        ImGui::BeginGroup();
+        if (ImGui::Button(" - ")) camera.adjust_zoom(-0.25f);
+        ImGui::SameLine();
+        char zoom_buf[32];
+        snprintf(zoom_buf, sizeof(zoom_buf), "%.0f%%", camera.zoom * 100.0f);
+        if (ImGui::Button(zoom_buf)) camera.zoom = 1.0f;
+        ImGui::SameLine();
+        if (ImGui::Button(" + ")) camera.adjust_zoom(0.25f);
+        ImGui::SameLine();
+
+        Node* cur_selected = EditorState::get()->get_selected_node();
+        Node2D* cur_n2d = dynamic_cast<Node2D*>(cur_selected);
+
+        if (ImGui::Button("Focus (F)") || (is_hovered && ImGui::IsKeyPressed(ImGuiKey_F))) {
+            if (cur_n2d) {
+                camera.pan = cur_n2d->get_global_position();
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Reset")) {
+            camera.pan = Vector2Fixed::zero();
+            camera.zoom = 1.0f;
+        }
+        ImGui::EndGroup();
+
         // 2. Gizmos & Selection Outlines
-        Node* selected_node = EditorState::get()->get_selected_node();
-        Node2D* n2d = dynamic_cast<Node2D*>(selected_node);
+        Node* selected_node = cur_selected;
+        Node2D* n2d = cur_n2d;
 
         if (n2d) {
             Vector2Fixed global_pos = n2d->get_global_position();

@@ -24,6 +24,13 @@ public:
 
     void set_stream_path(const std::string& path);
     const std::string& get_stream_path() const { return stream_path; }
+
+    void set_volume(float v) { volume = v; }
+    float get_volume() const { return volume; }
+
+    void set_autoplay(bool a) { autoplay = a; }
+    bool has_autoplay() const { return autoplay; }
+
     void play();
 
     virtual void _ready() override;
