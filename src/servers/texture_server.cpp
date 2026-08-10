@@ -75,6 +75,7 @@ uint32_t TextureServer::load_texture(const std::string& filepath) {
 
     if (final_path.empty()) {
         std::cerr << "[TextureServer] Warning: Could not locate image resource '" << filepath << "'" << std::endl;
+        path_to_id[filepath] = 0;
         return 0;
     }
 

@@ -1,60 +1,68 @@
 {
-  "name": "Hero",
-  "type": "CharacterBody2D",
-  "script": "PlayerController",
-  "children": [
-    {
-      "name": "Sprite",
-      "type": "AnimatedSprite2D",
-      "properties": {
-        "texture": "res://assets/sprites/hero.png"
-      }
-    },
-    {
-      "name": "Camera",
-      "type": "Camera2D"
-    },
-    {
-      "name": "HurtAudio",
-      "type": "AudioStreamPlayer",
-      "properties": {
-        "stream": "res://assets/audio/hurt_1.wav",
-        "volume": 1.0
-      }
-    },
-    {
-      "name": "AnimPlayer",
-      "type": "AnimationPlayer",
-      "properties": {
-        "autoplay": "idle_down",
-        "animations": {
-          "idle_down": {
-            "fps": 1,
-            "loop": true,
-            "frames": [{"x": 0, "y": 0, "w": 16, "h": 16}]
-          },
-          "walk_down": {
-            "fps": 8,
-            "loop": true,
-            "frames": [{"x": 0, "y": 0, "w": 16, "h": 16}]
-          },
-          "walk_up": {
-            "fps": 8,
-            "loop": true,
-            "frames": [{"x": 0, "y": 0, "w": 16, "h": 16}]
-          },
-          "walk_left": {
-            "fps": 8,
-            "loop": true,
-            "frames": [{"x": 0, "y": 0, "w": 16, "h": 16}]
-          },
-          "walk_right": {
-            "fps": 8,
-            "loop": true,
-            "frames": [{"x": 0, "y": 0, "w": 16, "h": 16}]
-          }
+    "children": [
+        {
+            "name": "Sprite",
+            "properties": {
+                "modulate": [
+                    255,
+                    0,
+                    0,
+                    255
+                ],
+                "position": {
+                    "x": 0.0,
+                    "y": 0.0
+                },
+                "rotation": 0.0,
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0
+                },
+                "texture": "res://assets/sprites/hero.png",
+                "z_index": 10
+            },
+            "type": "AnimatedSprite2D"
+        },
+        {
+            "name": "Camera",
+            "properties": {
+                "position": {
+                    "x": 0.0,
+                    "y": 0.0
+                },
+                "rotation": 0.0,
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0
+                }
+            },
+            "type": "Camera2D"
+        },
+        {
+            "name": "HurtAudio",
+            "properties": {
+                "autoplay": false,
+                "stream": "res://assets/audio/hurt_1.wav",
+                "volume": 1.0
+            },
+            "type": "AudioStreamPlayer"
+        },
+        {
+            "name": "AnimPlayer",
+            "type": "AnimationPlayer"
         }
-      }
-    }
-  ]
+    ],
+    "name": "Hero",
+    "properties": {
+        "position": {
+            "x": 0.0,
+            "y": 0.0
+        },
+        "rotation": 0.0,
+        "scale": {
+            "x": 1.0,
+            "y": 1.0
+        }
+    },
+    "type": "PlayerController"
 }

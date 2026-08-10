@@ -14,19 +14,34 @@ DebugOverlay::DebugOverlay() {
 }
 
 void DebugOverlay::_ready() {
-    fps_label = new Label();
-    fps_label->set_name("FPSLabel");
-    fps_label->set_position(Vector2Fixed::from_floats(0.0f, 0.0f));
-    fps_label->text_color = { 255, 230, 80, 255 }; // Retro gold yellow
-    fps_label->set_text("FPS: 60 (16.6ms)");
-    add_child(fps_label);
+    fps_label = nullptr;
+    info_label = nullptr;
 
-    info_label = new Label();
-    info_label->set_name("InfoLabel");
-    info_label->set_position(Vector2Fixed::from_floats(0.0f, 10.0f));
-    info_label->text_color = { 100, 220, 255, 255 }; // Light cyan
-    info_label->set_text("DRAWS: 0  TEX: 0");
-    add_child(info_label);
+    for (Node* child : get_children()) {
+        if (child->get_name() == "FPSLabel") {
+            fps_label = dynamic_cast<Label*>(child);
+        } else if (child->get_name() == "InfoLabel") {
+            info_label = dynamic_cast<Label*>(child);
+        }
+    }
+
+    if (!fps_label) {
+        fps_label = new Label();
+        fps_label->set_name("FPSLabel");
+        fps_label->set_position(Vector2Fixed::from_floats(0.0f, 0.0f));
+        fps_label->text_color = { 255, 230, 80, 255 }; // Retro gold yellow
+        fps_label->set_text("FPS: 60 (16.6ms)");
+        add_child(fps_label);
+    }
+
+    if (!info_label) {
+        info_label = new Label();
+        info_label->set_name("InfoLabel");
+        info_label->set_position(Vector2Fixed::from_floats(0.0f, 10.0f));
+        info_label->text_color = { 100, 220, 255, 255 }; // Light cyan
+        info_label->set_text("DRAWS: 0  TEX: 0");
+        add_child(info_label);
+    }
 }
 
 void DebugOverlay::_process(float delta) {

@@ -44,24 +44,86 @@ static Variant json_to_variant(const json &j) {
     float y = j.value("y", 0.0f);
     return Variant(Vector2Fixed::from_floats(x, y));
   }
-  if (j.is_array() && j.size() == 2) {
+  if (j.is_array() && j.size() == 2 && j[0].is_number() && j[1].is_number()) {
     float x = j[0].get<float>();
     float y = j[1].get<float>();
     return Variant(Vector2Fixed::from_floats(x, y));
   }
-  if (j.is_array() && j.size() == 4) {
-    return Variant(SDL_Color{
-        static_cast<Uint8>(j[0].get<int>()),
-        static_cast<Uint8>(j[1].get<int>()),
-        static_cast<Uint8>(j[2].get<int>()),
-        static_cast<Uint8>(j[3].get<int>())
-    });
+  if (j.is_array() && j.size() == 4 && j[0].is_number() && j[1].is_number() && j[2].is_number() && j[3].is_number()) {
+    bool is_color = true;
+    for (int i = 0; i < 4; ++i) {
+      if (!j[i].is_number_integer() || j[i].get<int>() < 0 || j[i].get<int>() > 255) {
+        is_color = false;
+        break;
+      }
+    }
+    if (is_color) {
+      return Variant(SDL_Color{
+          static_cast<Uint8>(j[0].get<int>()),
+          static_cast<Uint8>(j[1].get<int>()),
+          static_cast<Uint8>(j[2].get<int>()),
+          static_cast<Uint8>(j[3].get<int>())
+      });
+    } else {
+      return Variant(Rect2Fixed::from_floats(
+          j[0].get<float>(), j[1].get<float>(), j[2].get<float>(), j[3].get<float>()
+      ));
+    }
   }
   return Variant();
 }
 
+static Vector2Fixed parse_vector2_json(const json &j, Vector2Fixed default_val = Vector2Fixed::zero()) {
+  if (j.is_object()) {
+    float x = j.value("x", default_val.x.to_float());
+    float y = j.value("y", default_val.y.to_float());
+    return Vector2Fixed::from_floats(x, y);
+  }
+  if (j.is_array() && j.size() >= 2) {
+    float x = j[0].is_number() ? j[0].get<float>() : default_val.x.to_float();
+    float y = j[1].is_number() ? j[1].get<float>() : default_val.y.to_float();
+    return Vector2Fixed::from_floats(x, y);
+  }
+  return default_val;
+}
+
+static SDL_Color parse_color_json(const json &j, SDL_Color default_val = {255, 255, 255, 255}) {
+  if (j.is_object()) {
+    Uint8 r = j.value("r", default_val.r);
+    Uint8 g = j.value("g", default_val.g);
+    Uint8 b = j.value("b", default_val.b);
+    Uint8 a = j.value("a", default_val.a);
+    return SDL_Color{r, g, b, a};
+  }
+  if (j.is_array() && j.size() >= 3) {
+    Uint8 r = j[0].is_number() ? static_cast<Uint8>(j[0].get<int>()) : default_val.r;
+    Uint8 g = j[1].is_number() ? static_cast<Uint8>(j[1].get<int>()) : default_val.g;
+    Uint8 b = j[2].is_number() ? static_cast<Uint8>(j[2].get<int>()) : default_val.b;
+    Uint8 a = (j.size() >= 4 && j[3].is_number()) ? static_cast<Uint8>(j[3].get<int>()) : default_val.a;
+    return SDL_Color{r, g, b, a};
+  }
+  return default_val;
+}
+
+static Rect2Fixed parse_rect2_json(const json &j, Rect2Fixed default_val = Rect2Fixed::from_floats(0.0f, 0.0f, 0.0f, 0.0f)) {
+  if (j.is_object()) {
+    float x = j.value("x", default_val.position.x.to_float());
+    float y = j.value("y", default_val.position.y.to_float());
+    float w = j.value("w", default_val.size.x.to_float());
+    float h = j.value("h", default_val.size.y.to_float());
+    return Rect2Fixed::from_floats(x, y, w, h);
+  }
+  if (j.is_array() && j.size() >= 4) {
+    float x = j[0].is_number() ? j[0].get<float>() : default_val.position.x.to_float();
+    float y = j[1].is_number() ? j[1].get<float>() : default_val.position.y.to_float();
+    float w = j[2].is_number() ? j[2].get<float>() : default_val.size.x.to_float();
+    float h = j[3].is_number() ? j[3].get<float>() : default_val.size.y.to_float();
+    return Rect2Fixed::from_floats(x, y, w, h);
+  }
+  return default_val;
+}
+
 static Node *parse_node_internal(const json &j) {
-  // Support sub-scene instantiations via "instance": "res://scenes/player.json"
   if (j.contains("instance")) {
     std::string instance_path = j["instance"];
     std::string resolved_path = instance_path;
@@ -74,7 +136,6 @@ static Node *parse_node_internal(const json &j) {
         proj_dir + "/" + resolved_path, "./" + resolved_path,
         "./MyRPG/" + resolved_path, "../MyRPG/" + resolved_path, instance_path};
 
-    // Check for compiled binary .rnb counterpart first
     std::string final_path = "";
     for (auto cand : candidates) {
       if (cand.length() > 5 && cand.substr(cand.length() - 5) == ".json") {
@@ -98,13 +159,10 @@ static Node *parse_node_internal(const json &j) {
           instanced_node->set_name(j["name"]);
         }
 
-        if (j.contains("properties")) {
+        if (j.contains("properties") && j["properties"].is_object()) {
           const auto &props = j["properties"];
-          Node2D *node2d = dynamic_cast<Node2D *>(instanced_node);
-          if (node2d && props.contains("position")) {
-            float px = props["position"].value("x", 0.0f);
-            float py = props["position"].value("y", 0.0f);
-            node2d->set_position(Vector2Fixed::from_floats(px, py));
+          for (auto &[key, val] : props.items()) {
+            instanced_node->set(StringName(key), json_to_variant(val));
           }
         }
         std::cout << "[SceneLoader] Instanced sub-scene: " << instance_path
@@ -175,11 +233,7 @@ static Node *parse_node_internal(const json &j) {
 
           if (anim_data.contains("frames") && anim_data["frames"].is_array()) {
             for (const auto &f : anim_data["frames"]) {
-              float fx = f.value("x", 0.0f);
-              float fy = f.value("y", 0.0f);
-              float fw = f.value("w", 16.0f);
-              float fh = f.value("h", 16.0f);
-              track.frames.push_back(Rect2Fixed::from_floats(fx, fy, fw, fh));
+              track.frames.push_back(parse_rect2_json(f, Rect2Fixed::from_floats(0.0f, 0.0f, 16.0f, 16.0f)));
             }
           }
           anim_player->add_track(track);
@@ -228,11 +282,7 @@ static Node *parse_node_internal(const json &j) {
         }
       }
       if (props.contains("rect")) {
-        float rx = props["rect"].value("x", 0.0f);
-        float ry = props["rect"].value("y", 0.0f);
-        float rw = props["rect"].value("w", 16.0f);
-        float rh = props["rect"].value("h", 16.0f);
-        col_shape->set_rect(Rect2Fixed::from_floats(rx, ry, rw, rh));
+        col_shape->set_rect(parse_rect2_json(props["rect"]));
       }
       if (props.contains("radius")) {
         float rad = props.value("radius", 8.0f);
@@ -273,14 +323,10 @@ static Node *parse_node_internal(const json &j) {
         particles->set_texture_path(props["texture"]);
       }
       if (props.contains("gravity")) {
-        float gx = props["gravity"].value("x", 0.0f);
-        float gy = props["gravity"].value("y", 98.0f);
-        particles->gravity = Vector2Fixed::from_floats(gx, gy);
+        particles->gravity = parse_vector2_json(props["gravity"], Vector2Fixed::from_floats(0.0f, 98.0f));
       }
       if (props.contains("direction")) {
-        float dx = props["direction"].value("x", 1.0f);
-        float dy = props["direction"].value("y", 0.0f);
-        particles->direction = Vector2Fixed::from_floats(dx, dy);
+        particles->direction = parse_vector2_json(props["direction"], Vector2Fixed::from_floats(1.0f, 0.0f));
       }
       if (props.contains("spread")) {
         particles->spread = Fixed16::from_float(props.value("spread", 45.0f));
@@ -298,11 +344,7 @@ static Node *parse_node_internal(const json &j) {
         particles->scale_amount_max = Fixed16::from_float(props.value("scale_amount_max", 4.0f));
       }
       if (props.contains("color")) {
-        uint8_t cr = props["color"].value("r", 255);
-        uint8_t cg = props["color"].value("g", 255);
-        uint8_t cb = props["color"].value("b", 255);
-        uint8_t ca = props["color"].value("a", 255);
-        particles->color = {cr, cg, cb, ca};
+        particles->color = parse_color_json(props["color"]);
       }
       if (props.contains("color_ramp") && props["color_ramp"].is_array()) {
         if (!particles->color_ramp) {
@@ -310,12 +352,14 @@ static Node *parse_node_internal(const json &j) {
           particles->color_ramp->clear();
         }
         for (const auto &pt : props["color_ramp"]) {
-          float offset = pt.value("offset", 0.0f);
-          uint8_t r = pt.value("r", 255);
-          uint8_t g = pt.value("g", 255);
-          uint8_t b = pt.value("b", 255);
-          uint8_t a = pt.value("a", 255);
-          particles->color_ramp->add_point(offset, {r, g, b, a});
+          if (pt.is_object()) {
+            float offset = pt.value("offset", 0.0f);
+            Uint8 r = pt.value("r", 255);
+            Uint8 g = pt.value("g", 255);
+            Uint8 b = pt.value("b", 255);
+            Uint8 a = pt.value("a", 255);
+            particles->color_ramp->add_point(offset, {r, g, b, a});
+          }
         }
       }
       if (props.contains("scale_curve") && props["scale_curve"].is_array()) {
@@ -324,9 +368,11 @@ static Node *parse_node_internal(const json &j) {
           particles->scale_amount_curve->clear();
         }
         for (const auto &pt : props["scale_curve"]) {
-          float pos = pt.value("position", 0.0f);
-          float val = pt.value("val", 1.0f);
-          particles->scale_amount_curve->add_point(pos, val);
+          if (pt.is_object()) {
+            float pos = pt.value("position", 0.0f);
+            float val = pt.value("val", 1.0f);
+            particles->scale_amount_curve->add_point(pos, val);
+          }
         }
       }
     }
@@ -450,6 +496,59 @@ static json serialize_node_internal(const Node* node) {
     if (!node) return json::object();
     json j = json::object();
     j["name"] = node->get_name();
+
+    if (node->is_instanced_subscene()) {
+        j["instance"] = node->get_scene_instance_path();
+        json props = json::object();
+        std::vector<PropertyInfo> prop_list = node->get_property_list();
+        for (const auto& pinfo : prop_list) {
+            if (pinfo.name == StringName("name")) continue;
+            Variant val = node->get(pinfo.name);
+            if (val.is_nil()) continue;
+            switch (pinfo.type) {
+                case VariantType::BOOL:
+                    props[pinfo.name.as_string()] = val.as_bool();
+                    break;
+                case VariantType::INT:
+                    props[pinfo.name.as_string()] = val.as_int();
+                    break;
+                case VariantType::FLOAT16:
+                    props[pinfo.name.as_string()] = val.as_fixed16().to_float();
+                    break;
+                case VariantType::VECTOR2: {
+                    Vector2Fixed v = val.as_vector2();
+                    props[pinfo.name.as_string()] = { {"x", v.x.to_float()}, {"y", v.y.to_float()} };
+                    break;
+                }
+                case VariantType::RECT2: {
+                    Rect2Fixed r = val.as_rect2();
+                    props[pinfo.name.as_string()] = {
+                        {"x", r.position.x.to_float()},
+                        {"y", r.position.y.to_float()},
+                        {"w", r.size.x.to_float()},
+                        {"h", r.size.y.to_float()}
+                    };
+                    break;
+                }
+                case VariantType::COLOR: {
+                    SDL_Color c = val.as_color();
+                    props[pinfo.name.as_string()] = { c.r, c.g, c.b, c.a };
+                    break;
+                }
+                case VariantType::STRING:
+                case VariantType::STRING_NAME:
+                    props[pinfo.name.as_string()] = val.as_string();
+                    break;
+                default:
+                    break;
+            }
+        }
+        if (!props.empty()) {
+            j["properties"] = props;
+        }
+        return j;
+    }
+
     j["type"] = node->get_class_name().as_string();
 
     json props = json::object();
@@ -496,6 +595,17 @@ static json serialize_node_internal(const Node* node) {
                 break;
         }
     }
+    const TileMapLayer* tilemap = dynamic_cast<const TileMapLayer*>(node);
+    if (tilemap) {
+        props["columns"] = tilemap->columns;
+        props["rows"] = tilemap->rows;
+        props["tile_size"] = tilemap->tile_size;
+        props["z_index"] = tilemap->z_index;
+        props["tileset"] = tilemap->get_tileset_path();
+        props["tile_data"] = tilemap->tile_data;
+        props["collision_data"] = tilemap->collision_data;
+    }
+
     if (!props.empty()) {
         j["properties"] = props;
     }

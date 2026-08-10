@@ -53,7 +53,7 @@ void PhysicsServer2D::clear() {
 
 std::vector<size_t> PhysicsServer2D::get_nearby_body_indices(const Rect2Fixed& bounds) const {
     std::vector<size_t> nearby;
-    std::unordered_set<size_t> visited;
+    nearby.reserve(16);
 
     Fixed16 epsilon = Fixed16::from_raw(1);
     Fixed16 x1 = bounds.position.x;
@@ -72,7 +72,7 @@ std::vector<size_t> PhysicsServer2D::get_nearby_body_indices(const Rect2Fixed& b
             auto it = spatial_grid.find(key);
             if (it != spatial_grid.end()) {
                 for (size_t idx : it->second) {
-                    if (visited.insert(idx).second) {
+                    if (std::find(nearby.begin(), nearby.end(), idx) == nearby.end()) {
                         nearby.push_back(idx);
                     }
                 }

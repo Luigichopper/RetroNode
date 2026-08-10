@@ -111,9 +111,64 @@ public:
     CPUParticles2D();
     virtual ~CPUParticles2D() = default;
 
+    virtual void get_property_list(std::vector<PropertyInfo>& out_list) const override;
+    virtual Variant get(const StringName& p_name) const override;
+    virtual bool set(const StringName& p_name, const Variant& p_value) override;
+
     void set_amount(int p_amount);
+    int get_amount() const { return amount; }
+
     void set_emitting(bool p_emitting);
+    bool get_emitting() const { return emitting; }
+
+    void set_lifetime(Fixed16 p_life) { lifetime = p_life; }
+    Fixed16 get_lifetime() const { return lifetime; }
+
+    void set_one_shot(bool p_os) { one_shot = p_os; }
+    bool get_one_shot() const { return one_shot; }
+
+    void set_speed_scale(Fixed16 p_sc) { speed_scale = p_sc; }
+    Fixed16 get_speed_scale() const { return speed_scale; }
+
+    void set_explosiveness(Fixed16 p_exp) { explosiveness = p_exp; }
+    Fixed16 get_explosiveness() const { return explosiveness; }
+
+    void set_direction(const Vector2Fixed& p_dir) { direction = p_dir; }
+    Vector2Fixed get_direction() const { return direction; }
+
+    void set_spread(Fixed16 p_spread) { spread = p_spread; }
+    Fixed16 get_spread() const { return spread; }
+
+    void set_gravity(const Vector2Fixed& p_grav) { gravity = p_grav; }
+    Vector2Fixed get_gravity() const { return gravity; }
+
+    void set_initial_velocity_min(Fixed16 p_val) { initial_velocity_min = p_val; }
+    Fixed16 get_initial_velocity_min() const { return initial_velocity_min; }
+
+    void set_initial_velocity_max(Fixed16 p_val) { initial_velocity_max = p_val; }
+    Fixed16 get_initial_velocity_max() const { return initial_velocity_max; }
+
+    void set_angular_velocity_min(Fixed16 p_val) { angular_velocity_min = p_val; }
+    Fixed16 get_angular_velocity_min() const { return angular_velocity_min; }
+
+    void set_angular_velocity_max(Fixed16 p_val) { angular_velocity_max = p_val; }
+    Fixed16 get_angular_velocity_max() const { return angular_velocity_max; }
+
+    void set_scale_amount_min(Fixed16 p_val) { scale_amount_min = p_val; }
+    Fixed16 get_scale_amount_min() const { return scale_amount_min; }
+
+    void set_scale_amount_max(Fixed16 p_val) { scale_amount_max = p_val; }
+    Fixed16 get_scale_amount_max() const { return scale_amount_max; }
+
+    void set_color(const SDL_Color& p_col) { color = p_col; }
+    SDL_Color get_color() const { return color; }
+
     void set_texture_path(const std::string& path);
+    const std::string& get_texture_path() const { return texture_path; }
+
+    void set_z_index(int p_z) { z_index = p_z; }
+    int get_z_index() const { return z_index; }
+
     void restart();
 
     virtual void _physics_process(Fixed16 delta) override;

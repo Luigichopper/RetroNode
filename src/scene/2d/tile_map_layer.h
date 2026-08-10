@@ -23,6 +23,13 @@ public:
     int z_index = -10;
     SDL_Color modulate = { 255, 255, 255, 255 };
 
+private:
+    mutable uint32_t cached_texture_id = 0;
+    mutable int cached_tileset_cols = 1;
+    mutable Vector2Fixed cached_tex_size = Vector2Fixed::zero();
+
+public:
+
     TileMapLayer();
     virtual ~TileMapLayer() = default;
 

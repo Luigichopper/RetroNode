@@ -21,9 +21,17 @@ void MainMenuBar::draw() {
         }
 
         if (ImGui::BeginMenu("Edit")) {
+            if (ImGui::MenuItem("Undo", "Ctrl+Z", false, EditorState::get()->can_undo())) {
+                EditorState::get()->undo();
+            }
+            if (ImGui::MenuItem("Redo", "Ctrl+Y", false, EditorState::get()->can_redo())) {
+                EditorState::get()->redo();
+            }
+            ImGui::Separator();
             if (ImGui::MenuItem("Delete Node", "Del")) {
                 Node* sel = EditorState::get()->get_selected_node();
                 if (sel && sel->get_parent()) {
+                    EditorState::get()->push_undo_snapshot();
                     EditorState::get()->set_selected_instance_id(0);
                     sel->queue_free();
                 }
@@ -34,6 +42,18 @@ void MainMenuBar::draw() {
         if (ImGui::BeginMenu("View")) {
             if (ImGui::MenuItem("Reset Camera")) {
                 EditorState::get()->get_camera().reset();
+            }
+            ImGui::Separator();
+            if (ImGui::BeginMenu("UI Scale / Font Size")) {
+                if (ImGui::MenuItem("75%")) EditorState::get()->set_ui_scale(0.75f);
+                if (ImGui::MenuItem("100% (Default)")) EditorState::get()->set_ui_scale(1.0f);
+                if (ImGui::MenuItem("125%")) EditorState::get()->set_ui_scale(1.25f);
+                if (ImGui::MenuItem("150%")) EditorState::get()->set_ui_scale(1.50f);
+                if (ImGui::MenuItem("200%")) EditorState::get()->set_ui_scale(2.0f);
+                ImGui::Separator();
+                if (ImGui::MenuItem("Zoom UI In", "Ctrl++")) EditorState::get()->set_ui_scale(EditorState::get()->get_ui_scale() + 0.15f);
+                if (ImGui::MenuItem("Zoom UI Out", "Ctrl+-")) EditorState::get()->set_ui_scale(EditorState::get()->get_ui_scale() - 0.15f);
+                ImGui::EndMenu();
             }
             ImGui::EndMenu();
         }

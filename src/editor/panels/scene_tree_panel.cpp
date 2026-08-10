@@ -66,7 +66,7 @@ void SceneTreePanel::draw_node_tree(Node* node) {
 void SceneTreePanel::draw() {
     ImGui::Begin("Scene Tree");
 
-    Node* root = SceneTree::get()->get_root();
+    Node* root = EditorState::get()->get_active_root();
     if (root) {
         draw_node_tree(root);
     } else {

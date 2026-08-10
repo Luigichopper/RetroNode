@@ -67,9 +67,10 @@ bool EditorMain::process_event(const SDL_Event& event) {
 
     ImGuiIO& io = ImGui::GetIO();
     bool is_play_mode = EditorState::get()->get_is_play_mode();
+    bool is_game_view = EditorState::get()->is_game_view_active();
 
     // Event routing condition: gating gameplay input
-    if (is_play_mode && !io.WantCaptureKeyboard && !io.WantCaptureMouse) {
+    if (is_play_mode && is_game_view && !io.WantCaptureKeyboard && !io.WantCaptureMouse) {
         return false; // Forward event to gameplay
     }
     return true;
@@ -85,6 +86,22 @@ void EditorMain::render_frame(float alpha) {
     ImGui_ImplSDLRenderer3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.FontGlobalScale = EditorState::get()->get_ui_scale();
+
+    // Global Editor Keyboard Shortcuts
+    if (io.KeyCtrl && !io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z)) {
+        EditorState::get()->undo();
+    } else if (io.KeyCtrl && (ImGui::IsKeyPressed(ImGuiKey_Y) || (io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z)))) {
+        EditorState::get()->redo();
+    }
+
+    if (io.KeyCtrl && (ImGui::IsKeyPressed(ImGuiKey_Equal) || ImGui::IsKeyPressed(ImGuiKey_KeypadAdd))) {
+        EditorState::get()->set_ui_scale(EditorState::get()->get_ui_scale() + 0.15f);
+    } else if (io.KeyCtrl && (ImGui::IsKeyPressed(ImGuiKey_Minus) || ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract))) {
+        EditorState::get()->set_ui_scale(EditorState::get()->get_ui_scale() - 0.15f);
+    }
 
     // 3. Establish DockSpace over main viewport
     ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());

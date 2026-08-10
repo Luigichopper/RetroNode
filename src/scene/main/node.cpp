@@ -20,12 +20,14 @@ void Node::get_property_list(std::vector<PropertyInfo>& out_list) const {
 }
 
 Variant Node::get(const StringName& p_name) const {
-    if (p_name == StringName("name")) return Variant(name);
+    static const StringName s_name("name");
+    if (p_name == s_name) return Variant(name);
     return Object::get(p_name);
 }
 
 bool Node::set(const StringName& p_name, const Variant& p_value) {
-    if (p_name == StringName("name")) {
+    static const StringName s_name("name");
+    if (p_name == s_name) {
         set_name(p_value.as_string());
         return true;
     }

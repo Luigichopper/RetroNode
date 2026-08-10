@@ -18,22 +18,30 @@ void Node2D::get_property_list(std::vector<PropertyInfo>& out_list) const {
 }
 
 Variant Node2D::get(const StringName& p_name) const {
-    if (p_name == StringName("position")) return Variant(position);
-    if (p_name == StringName("rotation")) return Variant(rotation);
-    if (p_name == StringName("scale")) return Variant(scale);
+    static const StringName s_position("position");
+    static const StringName s_rotation("rotation");
+    static const StringName s_scale("scale");
+
+    if (p_name == s_position) return Variant(position);
+    if (p_name == s_rotation) return Variant(rotation);
+    if (p_name == s_scale) return Variant(scale);
     return Node::get(p_name);
 }
 
 bool Node2D::set(const StringName& p_name, const Variant& p_value) {
-    if (p_name == StringName("position")) {
+    static const StringName s_position("position");
+    static const StringName s_rotation("rotation");
+    static const StringName s_scale("scale");
+
+    if (p_name == s_position) {
         set_position(p_value.as_vector2());
         return true;
     }
-    if (p_name == StringName("rotation")) {
+    if (p_name == s_rotation) {
         rotation = p_value.as_fixed16();
         return true;
     }
-    if (p_name == StringName("scale")) {
+    if (p_name == s_scale) {
         scale = p_value.as_vector2();
         return true;
     }

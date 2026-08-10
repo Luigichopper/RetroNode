@@ -1,8 +1,12 @@
 #include "editor_state.h"
 #include "../scene/2d/node_2d.h"
 #include "../servers/physics_server.h"
+#include <nlohmann/json.hpp>
 #include <iostream>
+#include <fstream>
 #include <sstream>
+
+using json = nlohmann::json;
 
 namespace RetroNode {
 
@@ -31,19 +35,97 @@ Node* EditorState::find_node_by_path(Node* root, const std::string& path) const 
     return nullptr;
 }
 
+void EditorState::set_project_dir(const std::string& dir) {
+    project_dir = dir;
+    std::string pfile = project_dir + "/project.rnode";
+    std::ifstream file(pfile);
+    if (file.is_open()) {
+        try {
+            json j;
+            file >> j;
+            if (j.contains("main_scene") && j["main_scene"].is_string()) {
+                main_scene_path = j["main_scene"].get<std::string>();
+                std::cout << "[Editor] Parsed main_scene from project.rnode: " << main_scene_path << std::endl;
+            }
+        } catch (...) {}
+    }
+}
+
+void EditorState::push_undo_snapshot() {
+    if (is_play_mode || is_undoing_redoing) return;
+    Node* root = SceneTree::get()->get_root();
+    if (!root) return;
+
+    std::string snapshot = SceneLoader::serialize_node_to_json_string(root);
+    if (undo_stack.empty() || undo_stack.back() != snapshot) {
+        undo_stack.push_back(snapshot);
+        if (undo_stack.size() > 50) {
+            undo_stack.pop_front();
+        }
+        redo_stack.clear();
+    }
+}
+
+void EditorState::undo() {
+    if (undo_stack.size() <= 1) return;
+    is_undoing_redoing = true;
+
+    redo_stack.push_back(undo_stack.back());
+    undo_stack.pop_back();
+
+    std::string prev_snapshot = undo_stack.back();
+    PhysicsServer2D::get()->clear();
+    Node* restored = SceneLoader::load_scene_from_json_string(prev_snapshot);
+    if (restored) {
+        SceneTree::get()->set_root(restored);
+        status_message = "Undo performed";
+    }
+
+    is_undoing_redoing = false;
+}
+
+void EditorState::redo() {
+    if (redo_stack.empty()) return;
+    is_undoing_redoing = true;
+
+    std::string next_snapshot = redo_stack.back();
+    redo_stack.pop_back();
+    undo_stack.push_back(next_snapshot);
+
+    PhysicsServer2D::get()->clear();
+    Node* restored = SceneLoader::load_scene_from_json_string(next_snapshot);
+    if (restored) {
+        SceneTree::get()->set_root(restored);
+        status_message = "Redo performed";
+    }
+
+    is_undoing_redoing = false;
+}
+
 void EditorState::start_play_mode() {
     if (is_play_mode) return;
 
-    Node* root = SceneTree::get()->get_root();
-    if (root) {
-        play_mode_snapshot_json = SceneLoader::serialize_node_to_json_string(root);
-        selected_node_path_snapshot = get_node_path(get_selected_node());
+    editing_scene_before_play = current_scene_path;
+
+    if (play_mode_root) {
+        delete play_mode_root;
+        play_mode_root = nullptr;
+    }
+
+    play_mode_root = SceneLoader::load_scene_from_file(main_scene_path);
+    if (!play_mode_root && !current_scene_path.empty()) {
+        play_mode_root = SceneLoader::load_scene_from_file(current_scene_path);
+    }
+
+    if (play_mode_root) {
+        play_mode_root->propagate_ready();
     }
 
     is_play_mode = true;
     is_paused = false;
-    status_message = "Play mode active";
-    std::cout << "[Editor] Started sandboxed Play mode." << std::endl;
+    focus_game_tab_requested = true;
+    status_message = "Play mode active (Running: " + main_scene_path + ")";
+    std::cout << "[Editor] Started sandboxed Play mode on main scene: " << main_scene_path << std::endl;
 }
 
 void EditorState::stop_play_mode() {
@@ -51,39 +133,37 @@ void EditorState::stop_play_mode() {
 
     is_play_mode = false;
     is_paused = false;
-    selected_instance_id = 0;
+    focus_viewport_tab_requested = true;
 
-    // Clear stale physics body references before node destruction
-    PhysicsServer2D::get()->clear();
-
-    if (!play_mode_snapshot_json.empty()) {
-        Node* restored_root = SceneLoader::load_scene_from_json_string(play_mode_snapshot_json);
-        SceneTree::get()->set_root(restored_root);
-        if (restored_root && !selected_node_path_snapshot.empty()) {
-            Node* target = find_node_by_path(restored_root, selected_node_path_snapshot);
-            if (target) {
-                set_selected_instance_id(target->get_instance_id());
-            }
-        }
+    if (play_mode_root) {
+        delete play_mode_root;
+        play_mode_root = nullptr;
     }
 
-    status_message = "Play mode stopped - restored scene state";
-    std::cout << "[Editor] Stopped Play mode and restored scene snapshot." << std::endl;
+    status_message = "Play mode stopped";
+    std::cout << "[Editor] Stopped Play mode." << std::endl;
 }
 
 void EditorState::open_scene(const std::string& filepath) {
     if (filepath.empty()) return;
-    set_selected_instance_id(0);
-    PhysicsServer2D::get()->clear();
 
-    Node* new_root = SceneLoader::load_scene_from_file(filepath);
-    if (new_root) {
-        SceneTree::get()->set_root(new_root);
-        current_scene_path = filepath;
-        add_open_scene(filepath);
-        status_message = "Opened scene: " + filepath;
-    } else {
-        status_message = "Failed to open scene: " + filepath;
+    // Save initial state for undo stack before opening new scene
+    if (current_scene_path != filepath) {
+        set_selected_instance_id(0);
+        PhysicsServer2D::get()->clear();
+
+        Node* new_root = SceneLoader::load_scene_from_file(filepath);
+        if (new_root) {
+            SceneTree::get()->set_root(new_root);
+            current_scene_path = filepath;
+            add_open_scene(filepath);
+            undo_stack.clear();
+            redo_stack.clear();
+            push_undo_snapshot();
+            status_message = "Opened scene: " + filepath;
+        } else {
+            status_message = "Failed to open scene: " + filepath;
+        }
     }
 }
 

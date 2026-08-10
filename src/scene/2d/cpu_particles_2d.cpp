@@ -1,6 +1,9 @@
 #include "cpu_particles_2d.h"
 #include "../../servers/visual_server.h"
 #include "../../servers/texture_server.h"
+#ifdef RN_BUILD_EDITOR
+#include "../../editor/editor_state.h"
+#endif
 #include <cmath>
 #include <algorithm>
 
@@ -14,6 +17,112 @@ RN_REGISTER_CLASS(CPUParticles2D);
 
 CPUParticles2D::CPUParticles2D() {
     set_amount(amount);
+}
+
+void CPUParticles2D::get_property_list(std::vector<PropertyInfo>& out_list) const {
+    Node2D::get_property_list(out_list);
+    out_list.push_back({ StringName("emitting"), VariantType::BOOL });
+    out_list.push_back({ StringName("amount"), VariantType::INT });
+    out_list.push_back({ StringName("lifetime"), VariantType::FLOAT16 });
+    out_list.push_back({ StringName("one_shot"), VariantType::BOOL });
+    out_list.push_back({ StringName("speed_scale"), VariantType::FLOAT16 });
+    out_list.push_back({ StringName("explosiveness"), VariantType::FLOAT16 });
+    out_list.push_back({ StringName("direction"), VariantType::VECTOR2 });
+    out_list.push_back({ StringName("spread"), VariantType::FLOAT16 });
+    out_list.push_back({ StringName("gravity"), VariantType::VECTOR2 });
+    out_list.push_back({ StringName("initial_velocity_min"), VariantType::FLOAT16 });
+    out_list.push_back({ StringName("initial_velocity_max"), VariantType::FLOAT16 });
+    out_list.push_back({ StringName("angular_velocity_min"), VariantType::FLOAT16 });
+    out_list.push_back({ StringName("angular_velocity_max"), VariantType::FLOAT16 });
+    out_list.push_back({ StringName("scale_amount_min"), VariantType::FLOAT16 });
+    out_list.push_back({ StringName("scale_amount_max"), VariantType::FLOAT16 });
+    out_list.push_back({ StringName("color"), VariantType::COLOR });
+    out_list.push_back({ StringName("texture"), VariantType::STRING, PropertyHint::FILE_PATH, "*.png" });
+    out_list.push_back({ StringName("z_index"), VariantType::INT });
+}
+
+Variant CPUParticles2D::get(const StringName& p_name) const {
+    static const StringName s_emitting("emitting");
+    static const StringName s_amount("amount");
+    static const StringName s_lifetime("lifetime");
+    static const StringName s_one_shot("one_shot");
+    static const StringName s_speed_scale("speed_scale");
+    static const StringName s_explosiveness("explosiveness");
+    static const StringName s_direction("direction");
+    static const StringName s_spread("spread");
+    static const StringName s_gravity("gravity");
+    static const StringName s_initial_velocity_min("initial_velocity_min");
+    static const StringName s_initial_velocity_max("initial_velocity_max");
+    static const StringName s_angular_velocity_min("angular_velocity_min");
+    static const StringName s_angular_velocity_max("angular_velocity_max");
+    static const StringName s_scale_amount_min("scale_amount_min");
+    static const StringName s_scale_amount_max("scale_amount_max");
+    static const StringName s_color("color");
+    static const StringName s_texture("texture");
+    static const StringName s_texture_path("texture_path");
+    static const StringName s_z_index("z_index");
+
+    if (p_name == s_emitting) return Variant(emitting);
+    if (p_name == s_amount) return Variant((int64_t)amount);
+    if (p_name == s_lifetime) return Variant(lifetime);
+    if (p_name == s_one_shot) return Variant(one_shot);
+    if (p_name == s_speed_scale) return Variant(speed_scale);
+    if (p_name == s_explosiveness) return Variant(explosiveness);
+    if (p_name == s_direction) return Variant(direction);
+    if (p_name == s_spread) return Variant(spread);
+    if (p_name == s_gravity) return Variant(gravity);
+    if (p_name == s_initial_velocity_min) return Variant(initial_velocity_min);
+    if (p_name == s_initial_velocity_max) return Variant(initial_velocity_max);
+    if (p_name == s_angular_velocity_min) return Variant(angular_velocity_min);
+    if (p_name == s_angular_velocity_max) return Variant(angular_velocity_max);
+    if (p_name == s_scale_amount_min) return Variant(scale_amount_min);
+    if (p_name == s_scale_amount_max) return Variant(scale_amount_max);
+    if (p_name == s_color) return Variant(color);
+    if (p_name == s_texture || p_name == s_texture_path) return Variant(texture_path);
+    if (p_name == s_z_index) return Variant((int64_t)z_index);
+    return Node2D::get(p_name);
+}
+
+bool CPUParticles2D::set(const StringName& p_name, const Variant& p_value) {
+    static const StringName s_emitting("emitting");
+    static const StringName s_amount("amount");
+    static const StringName s_lifetime("lifetime");
+    static const StringName s_one_shot("one_shot");
+    static const StringName s_speed_scale("speed_scale");
+    static const StringName s_explosiveness("explosiveness");
+    static const StringName s_direction("direction");
+    static const StringName s_spread("spread");
+    static const StringName s_gravity("gravity");
+    static const StringName s_initial_velocity_min("initial_velocity_min");
+    static const StringName s_initial_velocity_max("initial_velocity_max");
+    static const StringName s_angular_velocity_min("angular_velocity_min");
+    static const StringName s_angular_velocity_max("angular_velocity_max");
+    static const StringName s_scale_amount_min("scale_amount_min");
+    static const StringName s_scale_amount_max("scale_amount_max");
+    static const StringName s_color("color");
+    static const StringName s_texture("texture");
+    static const StringName s_texture_path("texture_path");
+    static const StringName s_z_index("z_index");
+
+    if (p_name == s_emitting) { set_emitting(p_value.as_bool()); return true; }
+    if (p_name == s_amount) { set_amount(static_cast<int>(p_value.as_int())); return true; }
+    if (p_name == s_lifetime) { lifetime = p_value.as_fixed16(); return true; }
+    if (p_name == s_one_shot) { one_shot = p_value.as_bool(); return true; }
+    if (p_name == s_speed_scale) { speed_scale = p_value.as_fixed16(); return true; }
+    if (p_name == s_explosiveness) { explosiveness = p_value.as_fixed16(); return true; }
+    if (p_name == s_direction) { direction = p_value.as_vector2(); return true; }
+    if (p_name == s_spread) { spread = p_value.as_fixed16(); return true; }
+    if (p_name == s_gravity) { gravity = p_value.as_vector2(); return true; }
+    if (p_name == s_initial_velocity_min) { initial_velocity_min = p_value.as_fixed16(); return true; }
+    if (p_name == s_initial_velocity_max) { initial_velocity_max = p_value.as_fixed16(); return true; }
+    if (p_name == s_angular_velocity_min) { angular_velocity_min = p_value.as_fixed16(); return true; }
+    if (p_name == s_angular_velocity_max) { angular_velocity_max = p_value.as_fixed16(); return true; }
+    if (p_name == s_scale_amount_min) { scale_amount_min = p_value.as_fixed16(); return true; }
+    if (p_name == s_scale_amount_max) { scale_amount_max = p_value.as_fixed16(); return true; }
+    if (p_name == s_color) { color = p_value.as_color(); return true; }
+    if (p_name == s_texture || p_name == s_texture_path) { set_texture_path(p_value.as_string()); return true; }
+    if (p_name == s_z_index) { z_index = static_cast<int>(p_value.as_int()); return true; }
+    return Node2D::set(p_name, p_value);
 }
 
 void CPUParticles2D::set_amount(int p_amount) {
@@ -55,147 +164,109 @@ void CPUParticles2D::restart() {
 }
 
 float CPUParticles2D::randf() {
-    // Simple fast linear congruential generator for deterministic PRNG
     prng_seed = prng_seed * 1664525u + 1013904223u;
     return static_cast<float>(prng_seed & 0x00FFFFFF) / 16777215.0f;
 }
 
 float CPUParticles2D::randf_range(float min_val, float max_val) {
-    return min_val + (max_val - min_val) * randf();
+    return min_val + randf() * (max_val - min_val);
 }
 
 void CPUParticles2D::spawn_particle(Particle& p) {
     p.active = true;
     p.life = Fixed16::from_float(0.0f);
-    
-    float rand_life_mod = 1.0f - randf() * randomness.to_float();
-    float actual_lifetime = std::max(0.05f, lifetime.to_float() * rand_life_mod);
-    p.lifetime = Fixed16::from_float(actual_lifetime);
+    float ltime = lifetime.to_float() * (1.0f - randf_range(0.0f, randomness.to_float()));
+    p.lifetime = Fixed16::from_float(std::max(0.05f, ltime));
 
-    // Initial position based on emission shape
     Vector2Fixed spawn_pos = Vector2Fixed::zero();
-
     switch (emission_shape) {
         case ParticleEmissionShape::POINT:
             spawn_pos = Vector2Fixed::zero();
             break;
         case ParticleEmissionShape::SPHERE: {
-            float r = std::sqrt(randf()) * emission_sphere_radius.to_float();
-            float theta = randf() * 2.0f * static_cast<float>(M_PI);
-            spawn_pos = Vector2Fixed::from_floats(r * std::cos(theta), r * std::sin(theta));
+            float angle = randf_range(0.0f, 2.0f * static_cast<float>(M_PI));
+            float r = randf_range(0.0f, emission_sphere_radius.to_float());
+            spawn_pos = Vector2Fixed::from_floats(std::cos(angle) * r, std::sin(angle) * r);
             break;
         }
         case ParticleEmissionShape::RECTANGLE: {
-            float ex = emission_rect_extents.x.to_float();
-            float ey = emission_rect_extents.y.to_float();
-            spawn_pos = Vector2Fixed::from_floats(randf_range(-ex, ex), randf_range(-ey, ey));
+            float rx = randf_range(-emission_rect_extents.x.to_float(), emission_rect_extents.x.to_float());
+            float ry = randf_range(-emission_rect_extents.y.to_float(), emission_rect_extents.y.to_float());
+            spawn_pos = Vector2Fixed::from_floats(rx, ry);
             break;
         }
-        case ParticleEmissionShape::POINTS:
-        case ParticleEmissionShape::DIRECTED_POINTS: {
-            if (!emission_points.empty()) {
-                size_t idx = static_cast<size_t>(randf() * emission_points.size()) % emission_points.size();
-                spawn_pos = emission_points[idx];
-            }
+        default:
+            spawn_pos = Vector2Fixed::zero();
             break;
-        }
     }
 
-    if (local_coords) {
-        p.position = spawn_pos;
-    } else {
-        p.position = get_global_position() + spawn_pos;
-    }
-    p.previous_position = p.position;
+    p.position = spawn_pos;
+    p.previous_position = spawn_pos;
 
-    // Direction & Spread
+    // Calculate initial velocity with spread angle
     float base_angle = std::atan2(direction.y.to_float(), direction.x.to_float());
-    float half_spread = (spread.to_float() * static_cast<float>(M_PI) / 180.0f) * 0.5f;
-    float final_angle = base_angle + randf_range(-half_spread, half_spread);
+    float half_spread_rad = (spread.to_float() * 0.5f) * (static_cast<float>(M_PI) / 180.0f);
+    float p_angle = base_angle + randf_range(-half_spread_rad, half_spread_rad);
+    float speed = randf_range(initial_velocity_min.to_float(), initial_velocity_max.to_float());
 
-    float init_speed = randf_range(initial_velocity_min.to_float(), initial_velocity_max.to_float());
-    p.velocity = Vector2Fixed::from_floats(std::cos(final_angle) * init_speed, std::sin(final_angle) * init_speed);
+    p.velocity = Vector2Fixed::from_floats(std::cos(p_angle) * speed, std::sin(p_angle) * speed);
 
-    // Rotation & Rot velocity
     p.rotation = Fixed16::from_float(0.0f);
     p.rot_velocity = Fixed16::from_float(randf_range(angular_velocity_min.to_float(), angular_velocity_max.to_float()));
 
-    // Base color & initial scale
+    float init_scale = randf_range(scale_amount_min.to_float(), scale_amount_max.to_float());
+    p.scale = Vector2Fixed::from_floats(init_scale, init_scale);
+
     p.base_color = color;
     p.color = color;
-    float base_scale = randf_range(scale_amount_min.to_float(), scale_amount_max.to_float());
-    p.scale = Vector2Fixed::from_floats(base_scale, base_scale);
 }
 
 void CPUParticles2D::_physics_process(Fixed16 delta) {
-    Node2D::_physics_process(delta);
+    if (!emitting && std::all_of(particles.begin(), particles.end(), [](const Particle& p) { return !p.active; })) {
+        return;
+    }
 
     float dt_float = delta.to_float() * speed_scale.to_float();
     Fixed16 dt = Fixed16::from_float(dt_float);
 
-    if (dt_float <= 0.00001f) return;
+    time_accumulator += dt;
 
-    // Handle Spawning logic
+    // Spawn new particles based on emission rate
     if (emitting) {
-        float emission_rate = lifetime.to_float() / static_cast<float>(amount);
-        time_accumulator += dt;
+        float emission_rate = static_cast<float>(amount) / std::max(0.01f, lifetime.to_float());
+        float spawn_interval = (emission_rate > 0.0f) ? (1.0f / emission_rate) : 9999.0f;
 
-        while (time_accumulator.to_float() >= emission_rate) {
-            time_accumulator -= Fixed16::from_float(emission_rate);
+        while (time_accumulator.to_float() >= spawn_interval) {
+            time_accumulator -= Fixed16::from_float(spawn_interval);
 
-            // Find an inactive particle slot to spawn
-            bool spawned = false;
-            for (auto& p : particles) {
-                if (!p.active) {
-                    spawn_particle(p);
-                    spawned = true;
-                    break;
-                }
-            }
-
-            if (!spawned && one_shot) {
-                // Check if all particles finished life
-                bool any_active = false;
-                for (const auto& p : particles) {
-                    if (p.active) {
-                        any_active = true;
-                        break;
-                    }
-                }
-                if (!any_active) {
-                    emitting = false;
-                }
+            // Find first inactive particle slot to spawn
+            auto it = std::find_if(particles.begin(), particles.end(), [](const Particle& p) { return !p.active; });
+            if (it != particles.end()) {
+                spawn_particle(*it);
+            } else if (!one_shot) {
+                // Recycle oldest particle if max capacity reached
+                spawn_particle(particles[0]);
             }
         }
     }
 
-    // Particle dynamics simulation
+    // Update active particles
     for (auto& p : particles) {
         if (!p.active) continue;
 
         p.previous_position = p.position;
         p.life += dt;
 
-        float t = std::clamp(p.life.to_float() / p.lifetime.to_float(), 0.0f, 1.0f);
-
-        if (t >= 1.0f) {
+        if (p.life >= p.lifetime) {
             p.active = false;
             continue;
         }
 
-        // Apply Linear Acceleration
-        float lin_accel = randf_range(linear_accel_min.to_float(), linear_accel_max.to_float());
-        if (std::abs(lin_accel) > 0.001f) {
-            float vel_len = std::sqrt(p.velocity.x.to_float() * p.velocity.x.to_float() + p.velocity.y.to_float() * p.velocity.y.to_float());
-            if (vel_len > 0.001f) {
-                p.velocity += (p.velocity / Fixed16::from_float(vel_len)) * Fixed16::from_float(lin_accel * dt_float);
-            }
-        }
+        float t = p.life.to_float() / std::max(0.01f, p.lifetime.to_float());
 
-        // Apply Gravity
+        // Apply Forces (Gravity, Accelerations, Damping)
         p.velocity += gravity * dt;
 
-        // Apply Damping
         float damp = randf_range(damping_min.to_float(), damping_max.to_float());
         if (damp > 0.001f) {
             float damp_factor = std::max(0.0f, 1.0f - damp * dt_float);
@@ -228,6 +299,12 @@ void CPUParticles2D::_physics_process(Fixed16 delta) {
 
 void CPUParticles2D::_process(float delta) {
     (void)delta;
+
+#ifdef RN_BUILD_EDITOR
+    if (!EditorState::get()->get_is_play_mode()) {
+        _physics_process(Fixed16::from_float(delta));
+    }
+#endif
 
     Vector2Fixed node_global_pos = get_global_position();
 

@@ -23,6 +23,7 @@
 #include "scene/animation/animation_player.h"
 #include "scene/main/timer.h"
 #include "scene/2d/marker_2d.h"
+#include "scene/2d/cpu_particles_2d.h"
 #include "servers/audio_server.h"
 #include "game_module.h"
 
@@ -195,6 +196,26 @@ void register_engine_classes() {
     );
 
     RN_REGISTER_CLASS(AnimationPlayer);
+
+    RN_REGISTER_CLASS(CPUParticles2D);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "emitting", VariantType::BOOL }, &CPUParticles2D::set_emitting, &CPUParticles2D::get_emitting);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "amount", VariantType::INT }, &CPUParticles2D::set_amount, &CPUParticles2D::get_amount);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "lifetime", VariantType::FLOAT16 }, &CPUParticles2D::set_lifetime, &CPUParticles2D::get_lifetime);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "one_shot", VariantType::BOOL }, &CPUParticles2D::set_one_shot, &CPUParticles2D::get_one_shot);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "speed_scale", VariantType::FLOAT16 }, &CPUParticles2D::set_speed_scale, &CPUParticles2D::get_speed_scale);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "explosiveness", VariantType::FLOAT16 }, &CPUParticles2D::set_explosiveness, &CPUParticles2D::get_explosiveness);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "direction", VariantType::VECTOR2 }, &CPUParticles2D::set_direction, &CPUParticles2D::get_direction);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "spread", VariantType::FLOAT16 }, &CPUParticles2D::set_spread, &CPUParticles2D::get_spread);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "gravity", VariantType::VECTOR2 }, &CPUParticles2D::set_gravity, &CPUParticles2D::get_gravity);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "initial_velocity_min", VariantType::FLOAT16 }, &CPUParticles2D::set_initial_velocity_min, &CPUParticles2D::get_initial_velocity_min);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "initial_velocity_max", VariantType::FLOAT16 }, &CPUParticles2D::set_initial_velocity_max, &CPUParticles2D::get_initial_velocity_max);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "angular_velocity_min", VariantType::FLOAT16 }, &CPUParticles2D::set_angular_velocity_min, &CPUParticles2D::get_angular_velocity_min);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "angular_velocity_max", VariantType::FLOAT16 }, &CPUParticles2D::set_angular_velocity_max, &CPUParticles2D::get_angular_velocity_max);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "scale_amount_min", VariantType::FLOAT16 }, &CPUParticles2D::set_scale_amount_min, &CPUParticles2D::get_scale_amount_min);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "scale_amount_max", VariantType::FLOAT16 }, &CPUParticles2D::set_scale_amount_max, &CPUParticles2D::get_scale_amount_max);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "color", VariantType::COLOR }, &CPUParticles2D::set_color, &CPUParticles2D::get_color);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "texture", VariantType::STRING, PropertyHint::FILE_PATH, "*.png" }, &CPUParticles2D::set_texture_path, &CPUParticles2D::get_texture_path);
+    ClassDB::register_property("CPUParticles2D", PropertyInfo{ "z_index", VariantType::INT }, &CPUParticles2D::set_z_index, &CPUParticles2D::get_z_index);
 }
 
 std::string resolve_project_dir(const std::string& input_dir, int argc, char* argv[]) {
@@ -465,7 +486,10 @@ int main(int argc, char* argv[]) {
             }
 #ifdef RN_BUILD_EDITOR
             if (editor_mode) {
-                EditorMain::get()->process_event(event);
+                bool handled = EditorMain::get()->process_event(event);
+                if (!handled) {
+                    Input::get()->handle_event(event);
+                }
             } else {
                 Input::get()->handle_event(event);
             }
@@ -501,7 +525,15 @@ int main(int argc, char* argv[]) {
         if (is_physics_active) {
             // Fixed Physics Step
             while (accumulator >= FIXED_DT) {
+#ifdef RN_BUILD_EDITOR
+                if (editor_mode && EditorState::get()->get_play_mode_root()) {
+                    EditorState::get()->get_play_mode_root()->propagate_physics_process(FIXED_DT);
+                } else {
+                    SceneTree::get()->physics_process(FIXED_DT);
+                }
+#else
                 SceneTree::get()->physics_process(FIXED_DT);
+#endif
                 accumulator -= FIXED_DT;
             }
         } else {
@@ -509,7 +541,15 @@ int main(int argc, char* argv[]) {
         }
 
         // Visual draw commands populated every frame for editor viewport rendering
+#ifdef RN_BUILD_EDITOR
+        if (editor_mode && EditorState::get()->get_is_play_mode() && EditorState::get()->is_game_view_active() && EditorState::get()->get_play_mode_root()) {
+            EditorState::get()->get_play_mode_root()->propagate_process(delta_seconds);
+        } else {
+            SceneTree::get()->process(delta_seconds);
+        }
+#else
         SceneTree::get()->process(delta_seconds);
+#endif
 
         float render_alpha = accumulator.to_float() / FIXED_DT_FLOAT;
         

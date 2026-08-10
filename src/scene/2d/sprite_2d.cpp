@@ -18,22 +18,32 @@ void Sprite2D::get_property_list(std::vector<PropertyInfo>& out_list) const {
 }
 
 Variant Sprite2D::get(const StringName& p_name) const {
-    if (p_name == StringName("texture") || p_name == StringName("texture_path")) return Variant(texture_path);
-    if (p_name == StringName("z_index")) return Variant((int64_t)z_index);
-    if (p_name == StringName("modulate")) return Variant(modulate);
+    static const StringName s_texture("texture");
+    static const StringName s_texture_path("texture_path");
+    static const StringName s_z_index("z_index");
+    static const StringName s_modulate("modulate");
+
+    if (p_name == s_texture || p_name == s_texture_path) return Variant(texture_path);
+    if (p_name == s_z_index) return Variant((int64_t)z_index);
+    if (p_name == s_modulate) return Variant(modulate);
     return Node2D::get(p_name);
 }
 
 bool Sprite2D::set(const StringName& p_name, const Variant& p_value) {
-    if (p_name == StringName("texture") || p_name == StringName("texture_path")) {
+    static const StringName s_texture("texture");
+    static const StringName s_texture_path("texture_path");
+    static const StringName s_z_index("z_index");
+    static const StringName s_modulate("modulate");
+
+    if (p_name == s_texture || p_name == s_texture_path) {
         set_texture_path(p_value.as_string());
         return true;
     }
-    if (p_name == StringName("z_index")) {
+    if (p_name == s_z_index) {
         z_index = static_cast<int>(p_value.as_int());
         return true;
     }
-    if (p_name == StringName("modulate")) {
+    if (p_name == s_modulate) {
         modulate = p_value.as_color();
         return true;
     }

@@ -1,7 +1,11 @@
 #include "visual_server.h"
 #include "texture_server.h"
+#ifdef RN_BUILD_EDITOR
+#include "../editor/editor_state.h"
+#endif
 #include <algorithm>
 #include <iostream>
+#include <cmath>
 
 namespace RetroNode {
 
@@ -68,13 +72,12 @@ void VisualServer::submit_draw_sprite(
 void VisualServer::draw_line_2d(const Vector2Fixed& p_start, const Vector2Fixed& p_end, SDL_Color p_color) {
     if (!renderer) return;
 
-    Vector2Fixed screen_start = p_start - camera_offset;
-    Vector2Fixed screen_end   = p_end - camera_offset;
-
+    SDL_SetRenderTarget(renderer, virtual_framebuffer);
     SDL_SetRenderDrawColor(renderer, p_color.r, p_color.g, p_color.b, p_color.a);
-    SDL_RenderLine(renderer, screen_start.x.to_float(), screen_start.y.to_float(),
-                             screen_end.x.to_float(), screen_end.y.to_float());
+    SDL_RenderLine(renderer, p_start.x.to_float(), p_start.y.to_float(), p_end.x.to_float(), p_end.y.to_float());
 }
+
+
 
 void VisualServer::draw_rect_outline_2d(const Rect2Fixed& p_rect, SDL_Color p_color) {
     if (!renderer) return;
@@ -95,31 +98,45 @@ void VisualServer::draw_rect_outline_2d(const Rect2Fixed& p_rect, SDL_Color p_co
 void VisualServer::render_scene(float alpha) {
     if (!renderer || !virtual_framebuffer) return;
 
-    // 1. Render to Virtual Framebuffer Target
     SDL_SetRenderTarget(renderer, virtual_framebuffer);
-    SDL_SetRenderDrawColor(renderer, 24, 20, 36, 255); // Retro background color
+    SDL_SetRenderDrawColor(renderer, 20, 20, 24, 255);
     SDL_RenderClear(renderer);
 
-    // Stable sort draw commands by z-index for determinism
-    std::stable_sort(render_queue.begin(), render_queue.end(), [](const DrawCommand& a, const DrawCommand& b) {
+    std::sort(render_queue.begin(), render_queue.end(), [](const DrawCommand& a, const DrawCommand& b) {
         return a.z_index < b.z_index;
     });
+
+    Vector2Fixed active_cam_offset = camera_offset;
+    float active_cam_zoom = 1.0f;
+
+#ifdef RN_BUILD_EDITOR
+    if (!EditorState::get()->get_is_play_mode() || !EditorState::get()->is_game_view_active()) {
+        active_cam_offset = EditorState::get()->get_camera().pan;
+        active_cam_zoom = EditorState::get()->get_camera().zoom;
+    }
+#endif
 
     // Draw all submitted quads with frame interpolation & sub-pixel truncation (floor) for retro grid snapping
     for (const auto& cmd : render_queue) {
         // Interpolate world position between previous frame position and current position
-        Vector2Fixed interpolated_world_pos(
-            Fixed16::from_float(cmd.previous_position.x.to_float() + (cmd.world_position.x.to_float() - cmd.previous_position.x.to_float()) * alpha),
-            Fixed16::from_float(cmd.previous_position.y.to_float() + (cmd.world_position.y.to_float() - cmd.previous_position.y.to_float()) * alpha)
-        );
+        Vector2Fixed interpolated_world_pos = cmd.world_position;
+#ifdef RN_BUILD_EDITOR
+        bool is_play = EditorState::get()->get_is_play_mode();
+#else
+        bool is_play = true;
+#endif
+        if (is_play && alpha < 0.999f && cmd.world_position != cmd.previous_position) {
+            interpolated_world_pos.x = Fixed16::from_float(cmd.previous_position.x.to_float() + (cmd.world_position.x.to_float() - cmd.previous_position.x.to_float()) * alpha);
+            interpolated_world_pos.y = Fixed16::from_float(cmd.previous_position.y.to_float() + (cmd.world_position.y.to_float() - cmd.previous_position.y.to_float()) * alpha);
+        }
 
-        Vector2Fixed screen_pos = interpolated_world_pos - camera_offset;
-        
+        Vector2Fixed screen_pos = (interpolated_world_pos - active_cam_offset) * Fixed16::from_float(active_cam_zoom);
+
         // Sub-pixel truncation (floor) to guarantee alignment with retro pixel grid
         float draw_x = std::floor(screen_pos.x.to_float());
         float draw_y = std::floor(screen_pos.y.to_float());
-        float draw_w = cmd.size.x.to_float() * cmd.scale.x.to_float();
-        float draw_h = cmd.size.y.to_float() * cmd.scale.y.to_float();
+        float draw_w = cmd.size.x.to_float() * cmd.scale.x.to_float() * active_cam_zoom;
+        float draw_h = cmd.size.y.to_float() * cmd.scale.y.to_float() * active_cam_zoom;
 
         SDL_FRect dst_rect = { draw_x, draw_y, draw_w, draw_h };
         double rot_deg = static_cast<double>(cmd.rotation.to_float());

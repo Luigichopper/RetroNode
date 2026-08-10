@@ -17,22 +17,32 @@ void TileMapLayer::get_property_list(std::vector<PropertyInfo>& out_list) const 
 }
 
 Variant TileMapLayer::get(const StringName& p_name) const {
-    if (p_name == StringName("tileset") || p_name == StringName("tileset_path")) return Variant(tileset_path);
-    if (p_name == StringName("z_index")) return Variant((int64_t)z_index);
-    if (p_name == StringName("modulate")) return Variant(modulate);
+    static const StringName s_tileset("tileset");
+    static const StringName s_tileset_path("tileset_path");
+    static const StringName s_z_index("z_index");
+    static const StringName s_modulate("modulate");
+
+    if (p_name == s_tileset || p_name == s_tileset_path) return Variant(tileset_path);
+    if (p_name == s_z_index) return Variant((int64_t)z_index);
+    if (p_name == s_modulate) return Variant(modulate);
     return Node2D::get(p_name);
 }
 
 bool TileMapLayer::set(const StringName& p_name, const Variant& p_value) {
-    if (p_name == StringName("tileset") || p_name == StringName("tileset_path")) {
+    static const StringName s_tileset("tileset");
+    static const StringName s_tileset_path("tileset_path");
+    static const StringName s_z_index("z_index");
+    static const StringName s_modulate("modulate");
+
+    if (p_name == s_tileset || p_name == s_tileset_path) {
         set_tileset_path(p_value.as_string());
         return true;
     }
-    if (p_name == StringName("z_index")) {
+    if (p_name == s_z_index) {
         z_index = static_cast<int>(p_value.as_int());
         return true;
     }
-    if (p_name == StringName("modulate")) {
+    if (p_name == s_modulate) {
         modulate = p_value.as_color();
         return true;
     }
@@ -43,6 +53,7 @@ void TileMapLayer::set_tileset_path(const std::string& path) {
     tileset_path = path;
     if (!tileset_path.empty()) {
         tileset_texture_id = TextureServer::get()->load_texture(tileset_path);
+        cached_texture_id = 0; // Trigger recalculation in _process
     }
 }
 
@@ -84,9 +95,15 @@ void TileMapLayer::_process(float delta) {
         tileset_texture_id = TextureServer::get()->load_texture(tileset_path);
     }
 
+    if (tileset_texture_id != cached_texture_id) {
+        cached_texture_id = tileset_texture_id;
+        cached_tex_size = TextureServer::get()->get_texture_size(tileset_texture_id);
+        cached_tileset_cols = (cached_tex_size.x > Fixed16(0)) ? (cached_tex_size.x.to_int() / tile_size) : 1;
+        if (cached_tileset_cols < 1) cached_tileset_cols = 1;
+    }
+
     Vector2Fixed global_pos = get_global_position();
     Vector2Fixed global_prev_pos = get_global_previous_position();
-    Vector2Fixed tex_size = TextureServer::get()->get_texture_size(tileset_texture_id);
 
     Vector2Fixed cam_offset = VisualServer::get()->get_camera_offset();
     Fixed16 cam_min_x = cam_offset.x - Fixed16(tile_size);
@@ -99,8 +116,7 @@ void TileMapLayer::_process(float delta) {
     is_editor = true;
 #endif
 
-    int tileset_cols = (tex_size.x > Fixed16(0)) ? (tex_size.x.to_int() / tile_size) : 1;
-    if (tileset_cols < 1) tileset_cols = 1;
+    int tileset_cols = cached_tileset_cols;
 
     for (int r = 0; r < rows; ++r) {
         for (int c = 0; c < columns; ++c) {
