@@ -9,6 +9,8 @@ if(MSVC)
     add_compile_options(/FS)
 endif()
 
+option(RN_BUILD_EDITOR "Build RetroNode visual editor" ON)
+
 # Fetch dependencies
 include(FetchContent)
 
@@ -38,11 +40,47 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(SDL3 nlohmann_json stb)
 
+if (RN_BUILD_EDITOR)
+    FetchContent_Declare(
+        imgui
+        GIT_REPOSITORY https://github.com/ocornut/imgui.git
+        GIT_TAG docking
+        GIT_SHALLOW TRUE
+    )
+    FetchContent_Populate(imgui)
+
+    set(IMGUI_SOURCES
+        ${imgui_SOURCE_DIR}/imgui.cpp
+        ${imgui_SOURCE_DIR}/imgui_draw.cpp
+        ${imgui_SOURCE_DIR}/imgui_tables.cpp
+        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+        ${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer3.cpp
+    )
+
+    add_library(imgui STATIC ${IMGUI_SOURCES})
+    target_include_directories(imgui PUBLIC
+        ${imgui_SOURCE_DIR}
+        ${imgui_SOURCE_DIR}/backends
+        ${imgui_SOURCE_DIR}/misc/cpp
+    )
+
+    if (TARGET SDL3::SDL3-shared)
+        target_link_libraries(imgui PUBLIC SDL3::SDL3-shared)
+    elseif (TARGET SDL3::SDL3)
+        target_link_libraries(imgui PUBLIC SDL3::SDL3)
+    else()
+        target_link_libraries(imgui PUBLIC SDL3)
+    endif()
+endif()
+
 # Engine Core Shared Library
 set(ENGINE_CORE_SOURCES
     src/platform/game_module.cpp
     src/core/string_names.cpp
     src/core/object/object.cpp
+    src/core/object/object_db.cpp
     src/core/object/class_db.cpp
     src/core/undo_redo.cpp
     src/core/resource_manager.cpp
@@ -77,6 +115,18 @@ set(ENGINE_CORE_SOURCES
     src/scene/animation/animation_player.cpp
 )
 
+if (RN_BUILD_EDITOR)
+    list(APPEND ENGINE_CORE_SOURCES
+        src/editor/editor_state.cpp
+        src/editor/editor_main.cpp
+        src/editor/panels/main_menu_bar.cpp
+        src/editor/panels/scene_tree_panel.cpp
+        src/editor/panels/inspector_panel.cpp
+        src/editor/panels/filesystem_panel.cpp
+        src/editor/panels/viewport_panel.cpp
+    )
+endif()
+
 add_library(retronode_core SHARED ${ENGINE_CORE_SOURCES})
 
 target_compile_definitions(retronode_core PRIVATE RN_BUILD_ENGINE)
@@ -85,6 +135,12 @@ target_include_directories(retronode_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${stb_SOURCE_DIR}
 )
+
+if (RN_BUILD_EDITOR)
+    target_compile_definitions(retronode_core PUBLIC RN_BUILD_EDITOR)
+    target_include_directories(retronode_core PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends ${imgui_SOURCE_DIR}/misc/cpp)
+    target_link_libraries(retronode_core PUBLIC imgui)
+endif()
 
 target_link_libraries(retronode_core PUBLIC nlohmann_json::nlohmann_json)
 

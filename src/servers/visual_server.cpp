@@ -58,9 +58,11 @@ void VisualServer::submit_draw_sprite(
     const Rect2Fixed& src_rect,
     uint32_t texture_id,
     int z_index,
-    SDL_Color color
+    SDL_Color color,
+    Fixed16 rotation,
+    Vector2Fixed scale
 ) {
-    render_queue.push_back({pos, prev_pos, size, src_rect, texture_id, z_index, color});
+    render_queue.push_back({pos, prev_pos, size, src_rect, texture_id, z_index, color, rotation, scale});
 }
 
 void VisualServer::draw_line_2d(const Vector2Fixed& p_start, const Vector2Fixed& p_end, SDL_Color p_color) {
@@ -90,7 +92,7 @@ void VisualServer::draw_rect_outline_2d(const Rect2Fixed& p_rect, SDL_Color p_co
     SDL_RenderRect(renderer, &rect);
 }
 
-void VisualServer::render(float alpha) {
+void VisualServer::render_scene(float alpha) {
     if (!renderer || !virtual_framebuffer) return;
 
     // 1. Render to Virtual Framebuffer Target
@@ -116,10 +118,11 @@ void VisualServer::render(float alpha) {
         // Sub-pixel truncation (floor) to guarantee alignment with retro pixel grid
         float draw_x = std::floor(screen_pos.x.to_float());
         float draw_y = std::floor(screen_pos.y.to_float());
-        float draw_w = cmd.size.x.to_float();
-        float draw_h = cmd.size.y.to_float();
+        float draw_w = cmd.size.x.to_float() * cmd.scale.x.to_float();
+        float draw_h = cmd.size.y.to_float() * cmd.scale.y.to_float();
 
         SDL_FRect dst_rect = { draw_x, draw_y, draw_w, draw_h };
+        double rot_deg = static_cast<double>(cmd.rotation.to_float());
 
         SDL_Texture* tex = TextureServer::get()->get_texture(cmd.texture_id);
 
@@ -132,7 +135,11 @@ void VisualServer::render(float alpha) {
                 cmd.src_rect.size.x.to_float(),
                 cmd.src_rect.size.y.to_float()
             };
-            SDL_RenderTexture(renderer, tex, &src_frect, &dst_rect);
+            if (rot_deg != 0.0) {
+                SDL_RenderTextureRotated(renderer, tex, &src_frect, &dst_rect, rot_deg, NULL, SDL_FLIP_NONE);
+            } else {
+                SDL_RenderTexture(renderer, tex, &src_frect, &dst_rect);
+            }
         } else {
             // Fallback procedural retro quad rendering if texture is invalid/null
             SDL_SetRenderDrawColor(renderer, cmd.color.r, cmd.color.g, cmd.color.b, cmd.color.a);
@@ -142,14 +149,19 @@ void VisualServer::render(float alpha) {
 
     last_draw_call_count = render_queue.size();
     render_queue.clear();
+}
+
+void VisualServer::present_fullscreen(int win_w, int win_h) {
+    if (!renderer || !virtual_framebuffer) return;
 
     // 2. Blit Virtual Framebuffer to Window Screen with Integer Scaling
     SDL_SetRenderTarget(renderer, NULL);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    int win_w = 0, win_h = 0;
-    SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
+    if (win_w <= 0 || win_h <= 0) {
+        SDL_GetRenderOutputSize(renderer, &win_w, &win_h);
+    }
 
     // Calculate integer scale factor
     int scale_x = win_w / virtual_width;
@@ -171,6 +183,11 @@ void VisualServer::render(float alpha) {
 
     SDL_RenderTexture(renderer, virtual_framebuffer, NULL, &window_dst);
     SDL_RenderPresent(renderer);
+}
+
+void VisualServer::render(float alpha) {
+    render_scene(alpha);
+    present_fullscreen(0, 0);
 }
 
 } // namespace RetroNode

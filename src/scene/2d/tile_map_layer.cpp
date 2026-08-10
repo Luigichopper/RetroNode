@@ -80,6 +80,10 @@ void TileMapLayer::_process(float delta) {
     (void)delta;
     if (!is_visible_in_tree()) return;
 
+    if (tileset_texture_id == 0 && !tileset_path.empty()) {
+        tileset_texture_id = TextureServer::get()->load_texture(tileset_path);
+    }
+
     Vector2Fixed global_pos = get_global_position();
     Vector2Fixed global_prev_pos = get_global_previous_position();
     Vector2Fixed tex_size = TextureServer::get()->get_texture_size(tileset_texture_id);
@@ -89,6 +93,11 @@ void TileMapLayer::_process(float delta) {
     Fixed16 cam_max_x = cam_offset.x + Fixed16(256 + tile_size);
     Fixed16 cam_min_y = cam_offset.y - Fixed16(tile_size);
     Fixed16 cam_max_y = cam_offset.y + Fixed16(224 + tile_size);
+
+    bool is_editor = false;
+#ifdef RN_BUILD_EDITOR
+    is_editor = true;
+#endif
 
     int tileset_cols = (tex_size.x > Fixed16(0)) ? (tex_size.x.to_int() / tile_size) : 1;
     if (tileset_cols < 1) tileset_cols = 1;
@@ -107,8 +116,10 @@ void TileMapLayer::_process(float delta) {
             Fixed16 world_x = global_pos.x + Fixed16::from_int(c * tile_size);
             Fixed16 world_y = global_pos.y + Fixed16::from_int(r * tile_size);
 
-            if (world_x < cam_min_x || world_x > cam_max_x || world_y < cam_min_y || world_y > cam_max_y) {
-                continue;
+            if (!is_editor) {
+                if (world_x < cam_min_x || world_x > cam_max_x || world_y < cam_min_y || world_y > cam_max_y) {
+                    continue;
+                }
             }
 
             Fixed16 prev_world_x = global_prev_pos.x + Fixed16::from_int(c * tile_size);

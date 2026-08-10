@@ -17,6 +17,8 @@ class RN_API Node : public Object {
 
 protected:
     std::string name;
+    std::string scene_instance_path;
+    std::string script_path;
     Node* parent = nullptr;
     std::vector<Node*> children;
     bool is_queued_for_deletion = false;
@@ -28,12 +30,31 @@ public:
 
     Node* duplicate() const;
 
+    using Object::get_property_list;
     virtual void get_property_list(std::vector<PropertyInfo>& out_list) const override;
     virtual Variant get(const StringName& p_name) const override;
     virtual bool set(const StringName& p_name, const Variant& p_value) override;
 
     void set_name(const std::string& p_name) { name = p_name; }
     const std::string& get_name() const { return name; }
+
+    void set_scene_instance_path(const std::string& path) { scene_instance_path = path; }
+    const std::string& get_scene_instance_path() const { return scene_instance_path; }
+    bool is_instanced_subscene() const { return !scene_instance_path.empty(); }
+
+    void set_script_path(const std::string& path) { script_path = path; }
+    const std::string& get_script_path() const { return script_path; }
+    bool has_script() const {
+        if (!script_path.empty()) return true;
+        std::string cname = get_class_name().as_string();
+        return (cname != "Node" && cname != "Node2D" && cname != "Marker2D" &&
+                cname != "Sprite2D" && cname != "AnimatedSprite2D" &&
+                cname != "TileMapLayer" && cname != "CharacterBody2D" &&
+                cname != "Camera2D" && cname != "Control" && cname != "CanvasLayer" &&
+                cname != "Label" && cname != "NinePatchRect" && cname != "DebugOverlay" &&
+                cname != "AudioStreamPlayer" && cname != "AnimationPlayer" &&
+                cname != "Timer" && cname != "CPUParticles2D");
+    }
 
     Node* get_parent() const { return parent; }
     const std::vector<Node*>& get_children() const { return children; }

@@ -15,8 +15,10 @@ SceneTree::~SceneTree() {
 }
 
 void SceneTree::set_root(Node* node) {
-    if (root_node) {
-        delete root_node;
+    Node* old_root = root_node;
+    root_node = nullptr;
+    if (old_root) {
+        delete old_root;
     }
     root_node = node;
     if (root_node) {

@@ -13,16 +13,28 @@ Node2D::Node2D()
 void Node2D::get_property_list(std::vector<PropertyInfo>& out_list) const {
     Node::get_property_list(out_list);
     out_list.push_back({ StringName("position"), VariantType::VECTOR2 });
+    out_list.push_back({ StringName("rotation"), VariantType::FLOAT16 });
+    out_list.push_back({ StringName("scale"), VariantType::VECTOR2 });
 }
 
 Variant Node2D::get(const StringName& p_name) const {
     if (p_name == StringName("position")) return Variant(position);
+    if (p_name == StringName("rotation")) return Variant(rotation);
+    if (p_name == StringName("scale")) return Variant(scale);
     return Node::get(p_name);
 }
 
 bool Node2D::set(const StringName& p_name, const Variant& p_value) {
     if (p_name == StringName("position")) {
         set_position(p_value.as_vector2());
+        return true;
+    }
+    if (p_name == StringName("rotation")) {
+        rotation = p_value.as_fixed16();
+        return true;
+    }
+    if (p_name == StringName("scale")) {
+        scale = p_value.as_vector2();
         return true;
     }
     return Node::set(p_name, p_value);
@@ -52,6 +64,33 @@ Vector2Fixed Node2D::get_global_previous_position() const {
         p = p->get_parent();
     }
     return global_prev;
+}
+
+Fixed16 Node2D::get_global_rotation() const {
+    Fixed16 global_rot = rotation;
+    const Node* p = get_parent();
+    while (p) {
+        const Node2D* n2d = dynamic_cast<const Node2D*>(p);
+        if (n2d) {
+            global_rot += n2d->rotation;
+        }
+        p = p->get_parent();
+    }
+    return global_rot;
+}
+
+Vector2Fixed Node2D::get_global_scale() const {
+    Vector2Fixed global_scale = scale;
+    const Node* p = get_parent();
+    while (p) {
+        const Node2D* n2d = dynamic_cast<const Node2D*>(p);
+        if (n2d) {
+            global_scale.x *= n2d->scale.x;
+            global_scale.y *= n2d->scale.y;
+        }
+        p = p->get_parent();
+    }
+    return global_scale;
 }
 
 } // namespace RetroNode

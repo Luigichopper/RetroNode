@@ -25,12 +25,20 @@ public:
 
     Vector2Fixed get_global_position() const;
     Vector2Fixed get_global_previous_position() const;
+    Fixed16 get_global_rotation() const;
+    Vector2Fixed get_global_scale() const;
 
     void set_position(const Vector2Fixed& pos) { 
         position = pos;
         previous_position = pos; 
     }
     Vector2Fixed get_position() const { return position; }
+
+    void set_rotation(Fixed16 p_rot) { rotation = p_rot; }
+    Fixed16 get_rotation() const { return rotation; }
+
+    void set_scale(const Vector2Fixed& p_scale) { scale = p_scale; }
+    Vector2Fixed get_scale() const { return scale; }
 
     virtual void _physics_process(Fixed16 delta) override {
         previous_position = position;

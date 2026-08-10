@@ -1,5 +1,7 @@
 # RetroNode Engine — Phase 10: The RetroNode Editor (ImGui)
 
+**Status:** RESOLVED
+
 This document specifies **Phase 10**: adding a Godot-style visual editor to RetroNode, built on
 **Dear ImGui**. It covers a Scene Tree / FileSystem **Explorer**, a generic **Inspector**, and a
 **Viewport** with selection outlines and transform **gizmos**.

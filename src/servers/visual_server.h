@@ -18,6 +18,8 @@ struct DrawCommand {
     uint32_t texture_id;
     int z_index;
     SDL_Color color;
+    Fixed16 rotation;
+    Vector2Fixed scale;
 };
 
 class RN_API VisualServer {
@@ -60,12 +62,19 @@ public:
         const Rect2Fixed& src_rect,
         uint32_t texture_id = 0,
         int z_index = 0,
-        SDL_Color color = {255, 255, 255, 255}
+        SDL_Color color = {255, 255, 255, 255},
+        Fixed16 rotation = Fixed16(0),
+        Vector2Fixed scale = Vector2Fixed::one()
     );
     void draw_line_2d(const Vector2Fixed& p_start, const Vector2Fixed& p_end, SDL_Color p_color);
     void draw_rect_outline_2d(const Rect2Fixed& p_rect, SDL_Color p_color);
 
+    void render_scene(float alpha);
+    void present_fullscreen(int window_width, int window_height);
     void render(float alpha);
+
+    SDL_Texture* get_framebuffer_texture() const { return virtual_framebuffer; }
+    SDL_Renderer* get_renderer() const { return renderer; }
 
     int get_virtual_width() const { return virtual_width; }
     int get_virtual_height() const { return virtual_height; }

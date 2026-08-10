@@ -65,7 +65,9 @@ void Sprite2D::_process(float delta) {
         region_rect,
         texture_id,
         z_index,
-        modulate
+        modulate,
+        get_global_rotation(),
+        get_global_scale()
     );
 }
 

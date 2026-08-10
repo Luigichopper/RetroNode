@@ -93,6 +93,7 @@ static Node *parse_node_internal(const json &j) {
     if (!final_path.empty()) {
       Node *instanced_node = SceneLoader::load_scene_from_file(final_path);
       if (instanced_node) {
+        instanced_node->set_scene_instance_path(instance_path);
         if (j.contains("name")) {
           instanced_node->set_name(j["name"]);
         }
@@ -443,6 +444,106 @@ Node *SceneLoader::load_scene_from_file(const std::string &filepath) {
     std::cerr << "[SceneLoader] JSON Parse Error: " << e.what() << std::endl;
     return nullptr;
   }
+}
+
+static json serialize_node_internal(const Node* node) {
+    if (!node) return json::object();
+    json j = json::object();
+    j["name"] = node->get_name();
+    j["type"] = node->get_class_name().as_string();
+
+    json props = json::object();
+    std::vector<PropertyInfo> prop_list = node->get_property_list();
+    for (const auto& pinfo : prop_list) {
+        if (pinfo.name == StringName("name")) continue; // Handled separately
+        Variant val = node->get(pinfo.name);
+        if (val.is_nil()) continue;
+        switch (pinfo.type) {
+            case VariantType::BOOL:
+                props[pinfo.name.as_string()] = val.as_bool();
+                break;
+            case VariantType::INT:
+                props[pinfo.name.as_string()] = val.as_int();
+                break;
+            case VariantType::FLOAT16:
+                props[pinfo.name.as_string()] = val.as_fixed16().to_float();
+                break;
+            case VariantType::VECTOR2: {
+                Vector2Fixed v = val.as_vector2();
+                props[pinfo.name.as_string()] = { {"x", v.x.to_float()}, {"y", v.y.to_float()} };
+                break;
+            }
+            case VariantType::RECT2: {
+                Rect2Fixed r = val.as_rect2();
+                props[pinfo.name.as_string()] = {
+                    {"x", r.position.x.to_float()},
+                    {"y", r.position.y.to_float()},
+                    {"w", r.size.x.to_float()},
+                    {"h", r.size.y.to_float()}
+                };
+                break;
+            }
+            case VariantType::COLOR: {
+                SDL_Color c = val.as_color();
+                props[pinfo.name.as_string()] = { c.r, c.g, c.b, c.a };
+                break;
+            }
+            case VariantType::STRING:
+            case VariantType::STRING_NAME:
+                props[pinfo.name.as_string()] = val.as_string();
+                break;
+            default:
+                break;
+        }
+    }
+    if (!props.empty()) {
+        j["properties"] = props;
+    }
+
+    json children = json::array();
+    const auto& node_children = node->get_children();
+    for (size_t i = 0; i < node_children.size(); ++i) {
+        Node* child = node_children[i];
+        if (child) {
+            children.push_back(serialize_node_internal(child));
+        }
+    }
+    if (!children.empty()) {
+        j["children"] = children;
+    }
+
+    return j;
+}
+
+Node* SceneLoader::load_scene_from_json_string(const std::string& json_str) {
+    try {
+        json j = json::parse(json_str);
+        return parse_node_internal(j);
+    } catch (const std::exception& e) {
+        std::cerr << "[SceneLoader] JSON Parse Error from string: " << e.what() << std::endl;
+        return nullptr;
+    }
+}
+
+std::string SceneLoader::serialize_node_to_json_string(const Node* node) {
+    if (!node) return "";
+    json j = serialize_node_internal(node);
+    return j.dump(4);
+}
+
+bool SceneLoader::save_scene_to_file(const Node* node, const std::string& filepath) {
+    if (!node || filepath.empty()) return false;
+    std::string content = serialize_node_to_json_string(node);
+    if (content.empty()) return false;
+    std::ofstream file(filepath);
+    if (!file.is_open()) {
+        std::cerr << "[SceneLoader] Failed to open file for writing: " << filepath << std::endl;
+        return false;
+    }
+    file << content;
+    file.close();
+    std::cout << "[SceneLoader] Saved scene to: " << filepath << std::endl;
+    return true;
 }
 
 } // namespace RetroNode

@@ -16,6 +16,10 @@ struct Vector2Fixed {
         return Vector2Fixed(Fixed16(0), Fixed16(0));
     }
 
+    static constexpr Vector2Fixed one() noexcept {
+        return Vector2Fixed(Fixed16::from_int(1), Fixed16::from_int(1));
+    }
+
     static constexpr Vector2Fixed from_floats(float fx, float fy) noexcept {
         return Vector2Fixed(Fixed16::from_float(fx), Fixed16::from_float(fy));
     }

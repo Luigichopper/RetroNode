@@ -26,6 +26,11 @@
 #include "servers/audio_server.h"
 #include "game_module.h"
 
+#ifdef RN_BUILD_EDITOR
+#include "editor/editor_main.h"
+#include "editor/editor_state.h"
+#endif
+
 #include <nlohmann/json.hpp>
 #include <iostream>
 #include <fstream>
@@ -60,6 +65,14 @@ void register_engine_classes() {
     ClassDB::register_property(
         "Node2D", PropertyInfo{ "position", VariantType::VECTOR2 },
         &Node2D::set_position, &Node2D::get_position
+    );
+    ClassDB::register_property(
+        "Node2D", PropertyInfo{ "rotation", VariantType::FLOAT16 },
+        &Node2D::set_rotation, &Node2D::get_rotation
+    );
+    ClassDB::register_property(
+        "Node2D", PropertyInfo{ "scale", VariantType::VECTOR2 },
+        &Node2D::set_scale, &Node2D::get_scale
     );
 
     RN_REGISTER_CLASS(Marker2D);
@@ -212,11 +225,14 @@ int main(int argc, char* argv[]) {
 
     register_engine_classes();
 
-    // Determine game project directory
+    bool editor_mode = false;
     std::string specified_dir = "";
+
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-        if (arg == "--project" && i + 1 < argc) {
+        if (arg == "--editor" || arg == "-e") {
+            editor_mode = true;
+        } else if (arg == "--project" && i + 1 < argc) {
             specified_dir = argv[++i];
         }
     }
@@ -278,6 +294,10 @@ int main(int argc, char* argv[]) {
     }
 
     std::string window_title = "RetroNode Engine - " + project_name;
+    if (editor_mode) {
+        window_title += " [Editor Mode]";
+    }
+
     SDL_Window* window = SDL_CreateWindow(
         window_title.c_str(),
         window_width,
@@ -339,6 +359,14 @@ int main(int argc, char* argv[]) {
         std::cerr << "[RetroNode Engine] Warning: Could not load scene " << scene_path << std::endl;
     }
 
+#ifdef RN_BUILD_EDITOR
+    if (editor_mode) {
+        EditorState::get()->set_project_dir(project_dir);
+        EditorState::get()->set_current_scene_path(scene_path);
+        EditorMain::get()->init(window, renderer);
+    }
+#endif
+
     float fps_dt = (target_fps > 0) ? (1.0f / static_cast<float>(target_fps)) : (1.0f / 60.0f);
     const Fixed16 FIXED_DT = Fixed16::from_float(fps_dt);
     const float FIXED_DT_FLOAT = FIXED_DT.to_float();
@@ -356,7 +384,15 @@ int main(int argc, char* argv[]) {
             if (event.type == SDL_EVENT_QUIT) {
                 running = false;
             }
+#ifdef RN_BUILD_EDITOR
+            if (editor_mode) {
+                EditorMain::get()->process_event(event);
+            } else {
+                Input::get()->handle_event(event);
+            }
+#else
             Input::get()->handle_event(event);
+#endif
         }
 
         // Check for DLL hot-reloading
@@ -376,18 +412,44 @@ int main(int argc, char* argv[]) {
         // Clear render queue once per frame before physics & frame process
         VisualServer::get()->clear_render_queue();
 
-        // Fixed Physics Step
-        while (accumulator >= FIXED_DT) {
-            SceneTree::get()->physics_process(FIXED_DT);
-            accumulator -= FIXED_DT;
+        bool is_physics_active = true;
+#ifdef RN_BUILD_EDITOR
+        if (editor_mode) {
+            is_physics_active = EditorState::get()->get_is_play_mode() && !EditorState::get()->get_is_paused();
         }
+#endif
+
+        if (is_physics_active) {
+            // Fixed Physics Step
+            while (accumulator >= FIXED_DT) {
+                SceneTree::get()->physics_process(FIXED_DT);
+                accumulator -= FIXED_DT;
+            }
+        } else {
+            accumulator = Fixed16(0);
+        }
+
+        // Visual draw commands populated every frame for editor viewport rendering
+        SceneTree::get()->process(delta_seconds);
 
         float render_alpha = accumulator.to_float() / FIXED_DT_FLOAT;
         
-        // Frame Process & Render Step
-        SceneTree::get()->process(delta_seconds);
+#ifdef RN_BUILD_EDITOR
+        if (editor_mode) {
+            EditorMain::get()->render_frame(render_alpha);
+        } else {
+            VisualServer::get()->render(render_alpha);
+        }
+#else
         VisualServer::get()->render(render_alpha);
+#endif
     }
+
+#ifdef RN_BUILD_EDITOR
+    if (editor_mode) {
+        EditorMain::get()->shutdown();
+    }
+#endif
 
     VisualServer::get()->shutdown();
     SDL_DestroyRenderer(renderer);

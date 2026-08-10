@@ -3,6 +3,7 @@
 **Repo:** [Luigichopper/RetroNode](https://github.com/Luigichopper/RetroNode)
 **Commit reviewed:** `64bf942` ("feat: implement AnimationPlayer node and integrate into engine and player controller")
 **Method:** Full read-through of `src/` and `MyRPG/`, plus an actual build (CMake + g++ on Linux, SDL3 fetched via `FetchContent`) and headless runtime test (`SDL_VIDEODRIVER=offscreen`). Items marked **(verified at runtime)** were reproduced by running the compiled engine, not just inferred from reading code.
+**Status:** RESOLVED
 
 ---
 

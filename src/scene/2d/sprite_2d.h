@@ -26,6 +26,7 @@ public:
 
     void set_texture_path(const std::string& path);
     const std::string& get_texture_path() const { return texture_path; }
+    Vector2Fixed get_texture_size() const { return texture_size; }
     virtual void _process(float delta) override;
 };
 
