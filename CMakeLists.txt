@@ -5,6 +5,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+if(MSVC)
+    add_compile_options(/FS)
+endif()
+
 # Fetch dependencies
 include(FetchContent)
 
@@ -40,17 +44,22 @@ set(ENGINE_CORE_SOURCES
     src/core/string_names.cpp
     src/core/object/object.cpp
     src/core/object/class_db.cpp
+    src/core/undo_redo.cpp
+    src/core/resource_manager.cpp
     src/core/resource/gradient.cpp
     src/core/resource/curve.cpp
+    src/core/math/perlin_noise.cpp
     src/servers/input.cpp
     src/servers/visual_server.cpp
     src/servers/texture_server.cpp
     src/servers/physics_server.cpp
     src/servers/audio_server.cpp
     src/scene/main/node.cpp
+    src/scene/main/timer.cpp
     src/scene/main/scene_tree.cpp
     src/scene/main/scene_loader.cpp
     src/scene/2d/node_2d.cpp
+    src/scene/2d/marker_2d.cpp
     src/scene/2d/sprite_2d.cpp
     src/scene/2d/tile_map_layer.cpp
     src/scene/2d/camera_2d.cpp

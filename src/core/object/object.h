@@ -3,7 +3,10 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 #include "../string_names.h"
+#include "property_info.h"
+#include "variant.h"
 
 #if defined(_WIN32)
   #ifdef RN_BUILD_ENGINE
@@ -34,6 +37,16 @@ public:
 
     virtual bool is_class(const StringName& p_class) const {
         return p_class == StringName("Object");
+    }
+
+    virtual void get_property_list(std::vector<PropertyInfo>& out_list) const {}
+    virtual Variant get(const StringName& p_name) const { return Variant(); }
+    virtual bool set(const StringName& p_name, const Variant& p_value) { return false; }
+
+    std::vector<PropertyInfo> get_property_list() const {
+        std::vector<PropertyInfo> list;
+        get_property_list(list);
+        return list;
     }
 };
 

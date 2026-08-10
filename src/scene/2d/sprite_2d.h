@@ -20,7 +20,12 @@ public:
     Sprite2D();
     virtual ~Sprite2D() = default;
 
+    virtual void get_property_list(std::vector<PropertyInfo>& out_list) const override;
+    virtual Variant get(const StringName& p_name) const override;
+    virtual bool set(const StringName& p_name, const Variant& p_value) override;
+
     void set_texture_path(const std::string& path);
+    const std::string& get_texture_path() const { return texture_path; }
     virtual void _process(float delta) override;
 };
 

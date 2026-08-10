@@ -1,5 +1,6 @@
 #include "node.h"
 #include "../gui/canvas_layer.h"
+#include "../../core/object/class_db.h"
 #include <algorithm>
 
 namespace RetroNode {
@@ -11,6 +12,57 @@ Node::~Node() {
         delete child;
     }
     children.clear();
+}
+
+void Node::get_property_list(std::vector<PropertyInfo>& out_list) const {
+    Object::get_property_list(out_list);
+    out_list.push_back({ StringName("name"), VariantType::STRING });
+}
+
+Variant Node::get(const StringName& p_name) const {
+    if (p_name == StringName("name")) return Variant(name);
+    return Object::get(p_name);
+}
+
+bool Node::set(const StringName& p_name, const Variant& p_value) {
+    if (p_name == StringName("name")) {
+        set_name(p_value.as_string());
+        return true;
+    }
+    return Object::set(p_name, p_value);
+}
+
+Node* Node::duplicate() const {
+    StringName cls_name = get_class_name();
+    Object* new_obj = ClassDB::get()->instantiate(cls_name);
+    Node* new_node = dynamic_cast<Node*>(new_obj);
+    if (!new_node) {
+        if (new_obj) delete new_obj;
+        return nullptr;
+    }
+
+    // 1. Copy registered ClassDB properties
+    std::vector<PropertyInfo> props = ClassDB::get_property_list(cls_name);
+    for (const auto& pinfo : props) {
+        Variant val = get(pinfo.name);
+        if (!val.is_nil()) {
+            new_node->set(pinfo.name, val);
+        }
+    }
+
+    new_node->set_visible(is_visible());
+
+    // 2. Recursively duplicate child nodes
+    for (const Node* child : children) {
+        if (child && !child->is_queued_for_deletion) {
+            Node* dup_child = child->duplicate();
+            if (dup_child) {
+                new_node->add_child(dup_child);
+            }
+        }
+    }
+
+    return new_node;
 }
 
 CanvasLayer* Node::get_canvas_layer() const {

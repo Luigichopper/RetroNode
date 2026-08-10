@@ -18,6 +18,10 @@ public:
     Label();
     virtual ~Label() = default;
 
+    virtual void get_property_list(std::vector<PropertyInfo>& out_list) const override;
+    virtual Variant get(const StringName& p_name) const override;
+    virtual bool set(const StringName& p_name, const Variant& p_value) override;
+
     void set_text(const std::string& p_text) { text = p_text; }
     const std::string& get_text() const { return text; }
 

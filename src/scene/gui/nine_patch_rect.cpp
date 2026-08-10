@@ -10,6 +10,30 @@ NinePatchRect::NinePatchRect() {
     z_index = 90;
 }
 
+void NinePatchRect::get_property_list(std::vector<PropertyInfo>& out_list) const {
+    Control::get_property_list(out_list);
+    out_list.push_back({ StringName("texture"), VariantType::STRING, PropertyHint::FILE_PATH, "*.png" });
+    out_list.push_back({ StringName("patch_margin"), VariantType::INT });
+}
+
+Variant NinePatchRect::get(const StringName& p_name) const {
+    if (p_name == StringName("texture") || p_name == StringName("texture_path")) return Variant(texture_path);
+    if (p_name == StringName("patch_margin")) return Variant((int64_t)patch_margin);
+    return Control::get(p_name);
+}
+
+bool NinePatchRect::set(const StringName& p_name, const Variant& p_value) {
+    if (p_name == StringName("texture") || p_name == StringName("texture_path")) {
+        set_texture_path(p_value.as_string());
+        return true;
+    }
+    if (p_name == StringName("patch_margin")) {
+        patch_margin = static_cast<int>(p_value.as_int());
+        return true;
+    }
+    return Control::set(p_name, p_value);
+}
+
 void NinePatchRect::set_texture_path(const std::string& path) {
     texture_path = path;
     if (!texture_path.empty()) {

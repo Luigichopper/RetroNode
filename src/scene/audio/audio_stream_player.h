@@ -18,7 +18,12 @@ public:
     AudioStreamPlayer();
     virtual ~AudioStreamPlayer() = default;
 
+    virtual void get_property_list(std::vector<PropertyInfo>& out_list) const override;
+    virtual Variant get(const StringName& p_name) const override;
+    virtual bool set(const StringName& p_name, const Variant& p_value) override;
+
     void set_stream_path(const std::string& path);
+    const std::string& get_stream_path() const { return stream_path; }
     void play();
 
     virtual void _ready() override;

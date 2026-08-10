@@ -10,7 +10,7 @@
 
 namespace RetroNode {
 
-RN_REGISTER_CLASS(CPUParticles2D)
+RN_REGISTER_CLASS(CPUParticles2D);
 
 CPUParticles2D::CPUParticles2D() {
     set_amount(amount);

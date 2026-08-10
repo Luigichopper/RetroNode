@@ -19,6 +19,10 @@ public:
     Node2D();
     virtual ~Node2D() = default;
 
+    virtual void get_property_list(std::vector<PropertyInfo>& out_list) const override;
+    virtual Variant get(const StringName& p_name) const override;
+    virtual bool set(const StringName& p_name, const Variant& p_value) override;
+
     Vector2Fixed get_global_position() const;
     Vector2Fixed get_global_previous_position() const;
 

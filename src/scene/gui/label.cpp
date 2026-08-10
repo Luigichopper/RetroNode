@@ -106,6 +106,30 @@ void Label::_ready() {
     );
 }
 
+void Label::get_property_list(std::vector<PropertyInfo>& out_list) const {
+    Control::get_property_list(out_list);
+    out_list.push_back({ StringName("text"), VariantType::STRING });
+    out_list.push_back({ StringName("text_color"), VariantType::COLOR });
+}
+
+Variant Label::get(const StringName& p_name) const {
+    if (p_name == StringName("text")) return Variant(text);
+    if (p_name == StringName("text_color")) return Variant(text_color);
+    return Control::get(p_name);
+}
+
+bool Label::set(const StringName& p_name, const Variant& p_value) {
+    if (p_name == StringName("text")) {
+        set_text(p_value.as_string());
+        return true;
+    }
+    if (p_name == StringName("text_color")) {
+        text_color = p_value.as_color();
+        return true;
+    }
+    return Control::set(p_name, p_value);
+}
+
 void Label::_process(float delta) {
     (void)delta;
     if (!is_visible_in_tree()) return;

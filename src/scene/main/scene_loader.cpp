@@ -26,6 +26,40 @@ namespace fs = std::filesystem;
 
 namespace RetroNode {
 
+static Variant json_to_variant(const json &j) {
+  if (j.is_boolean()) {
+    return Variant(j.get<bool>());
+  }
+  if (j.is_number_integer()) {
+    return Variant(j.get<int64_t>());
+  }
+  if (j.is_number_float()) {
+    return Variant(Fixed16::from_float(j.get<float>()));
+  }
+  if (j.is_string()) {
+    return Variant(j.get<std::string>());
+  }
+  if (j.is_object() && j.contains("x") && j.contains("y")) {
+    float x = j.value("x", 0.0f);
+    float y = j.value("y", 0.0f);
+    return Variant(Vector2Fixed::from_floats(x, y));
+  }
+  if (j.is_array() && j.size() == 2) {
+    float x = j[0].get<float>();
+    float y = j[1].get<float>();
+    return Variant(Vector2Fixed::from_floats(x, y));
+  }
+  if (j.is_array() && j.size() == 4) {
+    return Variant(SDL_Color{
+        static_cast<Uint8>(j[0].get<int>()),
+        static_cast<Uint8>(j[1].get<int>()),
+        static_cast<Uint8>(j[2].get<int>()),
+        static_cast<Uint8>(j[3].get<int>())
+    });
+  }
+  return Variant();
+}
+
 static Node *parse_node_internal(const json &j) {
   // Support sub-scene instantiations via "instance": "res://scenes/player.json"
   if (j.contains("instance")) {
@@ -102,65 +136,24 @@ static Node *parse_node_internal(const json &j) {
     node->set_name(j["name"]);
   }
 
-  if (j.contains("properties")) {
+  if (j.contains("properties") && j["properties"].is_object()) {
     const auto &props = j["properties"];
-
-    Node2D *node2d = dynamic_cast<Node2D *>(node);
-    if (node2d && props.contains("position")) {
-      float px = props["position"].value("x", 0.0f);
-      float py = props["position"].value("y", 0.0f);
-      node2d->set_position(Vector2Fixed::from_floats(px, py));
+    for (auto &[key, val] : props.items()) {
+      node->set(StringName(key), json_to_variant(val));
     }
 
     Control *ctrl = dynamic_cast<Control *>(node);
-    if (ctrl) {
-      if (props.contains("position")) {
-        float px = props["position"].value("x", 0.0f);
-        float py = props["position"].value("y", 0.0f);
-        ctrl->set_position(Vector2Fixed::from_floats(px, py));
-      }
-      if (props.contains("size")) {
-        float sx = props["size"].value("x", 40.0f);
-        float sy = props["size"].value("y", 40.0f);
-        ctrl->set_size(Vector2Fixed::from_floats(sx, sy));
-      }
-      if (props.contains("z_index")) {
-        ctrl->z_index = props.value("z_index", 100);
-      }
-    }
-
-    Sprite2D *sprite = dynamic_cast<Sprite2D *>(node);
-    if (sprite) {
-      if (props.contains("texture")) {
-        sprite->set_texture_path(props["texture"]);
-      }
-      if (props.contains("z_index")) {
-        sprite->z_index = props.value("z_index", 10);
-      }
-    }
-
-    Label *label = dynamic_cast<Label *>(node);
-    if (label) {
-      if (props.contains("text")) {
-        label->set_text(props["text"]);
-      }
+    if (ctrl && props.contains("z_index")) {
+      ctrl->z_index = props.value("z_index", 100);
     }
 
     NinePatchRect *nine_patch = dynamic_cast<NinePatchRect *>(node);
-    if (nine_patch) {
-      if (props.contains("texture")) {
-        nine_patch->set_texture_path(props["texture"]);
-      }
-      if (props.contains("patch_margin")) {
-        nine_patch->patch_margin = props.value("patch_margin", 4);
-      }
+    if (nine_patch && props.contains("patch_margin")) {
+      nine_patch->patch_margin = props.value("patch_margin", 4);
     }
 
     AudioStreamPlayer *audio_player = dynamic_cast<AudioStreamPlayer *>(node);
     if (audio_player) {
-      if (props.contains("stream")) {
-        audio_player->set_stream_path(props["stream"]);
-      }
       if (props.contains("volume")) {
         audio_player->volume = props.value("volume", 1.0f);
       }

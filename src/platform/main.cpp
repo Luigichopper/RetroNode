@@ -21,6 +21,8 @@
 #include "scene/gui/debug_overlay.h"
 #include "scene/audio/audio_stream_player.h"
 #include "scene/animation/animation_player.h"
+#include "scene/main/timer.h"
+#include "scene/2d/marker_2d.h"
 #include "servers/audio_server.h"
 #include "game_module.h"
 
@@ -35,18 +37,71 @@ namespace fs = std::filesystem;
 
 void register_engine_classes() {
     RN_REGISTER_CLASS(Node);
+    ClassDB::register_property(
+        "Node", PropertyInfo{ "name", VariantType::STRING },
+        &Node::set_name, &Node::get_name
+    );
+
+    RN_REGISTER_CLASS(Timer);
+    ClassDB::register_property(
+        "Timer", PropertyInfo{ "wait_time", VariantType::FLOAT16, PropertyHint::RANGE, "0.001,4096.0,0.01" },
+        &Timer::set_wait_time, &Timer::get_wait_time
+    );
+    ClassDB::register_property(
+        "Timer", PropertyInfo{ "one_shot", VariantType::BOOL },
+        &Timer::set_one_shot, &Timer::is_one_shot
+    );
+    ClassDB::register_property(
+        "Timer", PropertyInfo{ "autostart", VariantType::BOOL },
+        &Timer::set_autostart, &Timer::has_autostart
+    );
+
     RN_REGISTER_CLASS(Node2D);
+    ClassDB::register_property(
+        "Node2D", PropertyInfo{ "position", VariantType::VECTOR2 },
+        &Node2D::set_position, &Node2D::get_position
+    );
+
+    RN_REGISTER_CLASS(Marker2D);
+
     RN_REGISTER_CLASS(Sprite2D);
+    ClassDB::register_property(
+        "Sprite2D", PropertyInfo{ "texture_path", VariantType::STRING, PropertyHint::FILE_PATH, "*.png" },
+        &Sprite2D::set_texture_path, &Sprite2D::get_texture_path
+    );
+
     RN_REGISTER_CLASS(AnimatedSprite2D);
     RN_REGISTER_CLASS(TileMapLayer);
     RN_REGISTER_CLASS(CharacterBody2D);
     RN_REGISTER_CLASS(Camera2D);
+
     RN_REGISTER_CLASS(Control);
+    ClassDB::register_property(
+        "Control", PropertyInfo{ "position", VariantType::VECTOR2 },
+        &Control::set_position, &Control::get_position
+    );
+    ClassDB::register_property(
+        "Control", PropertyInfo{ "size", VariantType::VECTOR2 },
+        &Control::set_size, &Control::get_size
+    );
+
     RN_REGISTER_CLASS(CanvasLayer);
+
     RN_REGISTER_CLASS(Label);
+    ClassDB::register_property(
+        "Label", PropertyInfo{ "text", VariantType::STRING },
+        &Label::set_text, &Label::get_text
+    );
+
     RN_REGISTER_CLASS(NinePatchRect);
     RN_REGISTER_CLASS(DebugOverlay);
+
     RN_REGISTER_CLASS(AudioStreamPlayer);
+    ClassDB::register_property(
+        "AudioStreamPlayer", PropertyInfo{ "stream_path", VariantType::STRING, PropertyHint::FILE_PATH, "*.wav" },
+        &AudioStreamPlayer::set_stream_path, &AudioStreamPlayer::get_stream_path
+    );
+
     RN_REGISTER_CLASS(AnimationPlayer);
 }
 

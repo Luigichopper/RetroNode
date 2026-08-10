@@ -4,7 +4,7 @@
 
 namespace RetroNode {
 
-RN_REGISTER_CLASS(Gradient)
+RN_REGISTER_CLASS(Gradient);
 
 Gradient::Gradient() {
     // Default gradient: White to Black or White to Transparent White

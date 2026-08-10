@@ -63,6 +63,33 @@ void VisualServer::submit_draw_sprite(
     render_queue.push_back({pos, prev_pos, size, src_rect, texture_id, z_index, color});
 }
 
+void VisualServer::draw_line_2d(const Vector2Fixed& p_start, const Vector2Fixed& p_end, SDL_Color p_color) {
+    if (!renderer) return;
+
+    Vector2Fixed screen_start = p_start - camera_offset;
+    Vector2Fixed screen_end   = p_end - camera_offset;
+
+    SDL_SetRenderDrawColor(renderer, p_color.r, p_color.g, p_color.b, p_color.a);
+    SDL_RenderLine(renderer, screen_start.x.to_float(), screen_start.y.to_float(),
+                             screen_end.x.to_float(), screen_end.y.to_float());
+}
+
+void VisualServer::draw_rect_outline_2d(const Rect2Fixed& p_rect, SDL_Color p_color) {
+    if (!renderer) return;
+
+    Vector2Fixed screen_pos = p_rect.position - camera_offset;
+
+    SDL_FRect rect = {
+        screen_pos.x.to_float(),
+        screen_pos.y.to_float(),
+        p_rect.size.x.to_float(),
+        p_rect.size.y.to_float()
+    };
+
+    SDL_SetRenderDrawColor(renderer, p_color.r, p_color.g, p_color.b, p_color.a);
+    SDL_RenderRect(renderer, &rect);
+}
+
 void VisualServer::render(float alpha) {
     if (!renderer || !virtual_framebuffer) return;
 

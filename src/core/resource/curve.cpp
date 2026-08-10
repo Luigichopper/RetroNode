@@ -4,7 +4,7 @@
 
 namespace RetroNode {
 
-RN_REGISTER_CLASS(Curve)
+RN_REGISTER_CLASS(Curve);
 
 Curve::Curve() {
     // Default curve: constant 1.0 from position 0.0 to 1.0

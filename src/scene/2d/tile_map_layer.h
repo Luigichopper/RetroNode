@@ -26,6 +26,10 @@ public:
     TileMapLayer();
     virtual ~TileMapLayer() = default;
 
+    virtual void get_property_list(std::vector<PropertyInfo>& out_list) const override;
+    virtual Variant get(const StringName& p_name) const override;
+    virtual bool set(const StringName& p_name, const Variant& p_value) override;
+
     void set_tileset_path(const std::string& path);
     void setup_map(int p_cols, int p_rows, int p_tile_sz, const std::vector<int>& p_tiles, const std::vector<bool>& p_collisions);
 

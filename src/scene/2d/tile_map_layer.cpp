@@ -9,6 +9,36 @@ TileMapLayer::TileMapLayer() {
     name = "TileMapLayer";
 }
 
+void TileMapLayer::get_property_list(std::vector<PropertyInfo>& out_list) const {
+    Node2D::get_property_list(out_list);
+    out_list.push_back({ StringName("tileset"), VariantType::STRING, PropertyHint::FILE_PATH, "*.png" });
+    out_list.push_back({ StringName("z_index"), VariantType::INT });
+    out_list.push_back({ StringName("modulate"), VariantType::COLOR });
+}
+
+Variant TileMapLayer::get(const StringName& p_name) const {
+    if (p_name == StringName("tileset") || p_name == StringName("tileset_path")) return Variant(tileset_path);
+    if (p_name == StringName("z_index")) return Variant((int64_t)z_index);
+    if (p_name == StringName("modulate")) return Variant(modulate);
+    return Node2D::get(p_name);
+}
+
+bool TileMapLayer::set(const StringName& p_name, const Variant& p_value) {
+    if (p_name == StringName("tileset") || p_name == StringName("tileset_path")) {
+        set_tileset_path(p_value.as_string());
+        return true;
+    }
+    if (p_name == StringName("z_index")) {
+        z_index = static_cast<int>(p_value.as_int());
+        return true;
+    }
+    if (p_name == StringName("modulate")) {
+        modulate = p_value.as_color();
+        return true;
+    }
+    return Node2D::set(p_name, p_value);
+}
+
 void TileMapLayer::set_tileset_path(const std::string& path) {
     tileset_path = path;
     if (!tileset_path.empty()) {
