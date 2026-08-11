@@ -68,6 +68,12 @@ void Sprite2D::_process(float delta) {
     Vector2Fixed global_pos = get_global_position();
     Vector2Fixed global_prev_pos = get_global_previous_position();
 
+    if (get_canvas_layer()) {
+        Vector2Fixed cam_offset = VisualServer::get()->get_camera_offset();
+        global_pos = global_pos + cam_offset;
+        global_prev_pos = global_prev_pos + cam_offset;
+    }
+
     VisualServer::get()->submit_draw_sprite(
         global_pos,
         global_prev_pos,

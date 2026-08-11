@@ -53,6 +53,10 @@ void VisualServer::shutdown() {
         SDL_DestroyTexture(virtual_framebuffer);
         virtual_framebuffer = nullptr;
     }
+    if (editor_framebuffer) {
+        SDL_DestroyTexture(editor_framebuffer);
+        editor_framebuffer = nullptr;
+    }
 }
 
 void VisualServer::submit_draw_sprite(
@@ -95,6 +99,81 @@ void VisualServer::draw_rect_outline_2d(const Rect2Fixed& p_rect, SDL_Color p_co
     SDL_RenderRect(renderer, &rect);
 }
 
+SDL_Texture* VisualServer::get_editor_framebuffer_texture(int width, int height) {
+    if (width <= 0 || height <= 0 || !renderer) return nullptr;
+    if (editor_framebuffer && (editor_width != width || editor_height != height)) {
+        SDL_DestroyTexture(editor_framebuffer);
+        editor_framebuffer = nullptr;
+    }
+    if (!editor_framebuffer) {
+        editor_width = width;
+        editor_height = height;
+        editor_framebuffer = SDL_CreateTexture(
+            renderer,
+            SDL_PIXELFORMAT_RGBA8888,
+            SDL_TEXTUREACCESS_TARGET,
+            editor_width,
+            editor_height
+        );
+        if (editor_framebuffer) {
+            SDL_SetTextureScaleMode(editor_framebuffer, SDL_SCALEMODE_NEAREST);
+        }
+    }
+    return editor_framebuffer;
+}
+
+void VisualServer::render_editor_scene(float alpha, int width, int height, const Vector2Fixed& cam_pan, float cam_zoom) {
+    (void)alpha;
+    if (!renderer || width <= 0 || height <= 0) return;
+    SDL_Texture* target_tex = get_editor_framebuffer_texture(width, height);
+    if (!target_tex) return;
+
+    SDL_SetRenderTarget(renderer, target_tex);
+    SDL_SetRenderDrawColor(renderer, 24, 24, 28, 255);
+    SDL_RenderClear(renderer);
+
+    std::sort(render_queue.begin(), render_queue.end(), [](const DrawCommand& a, const DrawCommand& b) {
+        return a.z_index < b.z_index;
+    });
+
+    float center_x = static_cast<float>(width) * 0.5f;
+    float center_y = static_cast<float>(height) * 0.5f;
+
+    for (const auto& cmd : render_queue) {
+        float draw_x = std::floor(center_x + (cmd.world_position.x.to_float() - cam_pan.x.to_float()) * cam_zoom);
+        float draw_y = std::floor(center_y + (cmd.world_position.y.to_float() - cam_pan.y.to_float()) * cam_zoom);
+        float draw_w = cmd.size.x.to_float() * cmd.scale.x.to_float() * cam_zoom;
+        float draw_h = cmd.size.y.to_float() * cmd.scale.y.to_float() * cam_zoom;
+
+        SDL_FRect dst_rect = { draw_x, draw_y, draw_w, draw_h };
+        double rot_deg = static_cast<double>(cmd.rotation.to_float());
+
+        SDL_Texture* tex = TextureServer::get()->get_texture(cmd.texture_id);
+
+        if (tex) {
+            SDL_SetTextureColorMod(tex, cmd.color.r, cmd.color.g, cmd.color.b);
+            SDL_SetTextureAlphaMod(tex, cmd.color.a);
+            SDL_FRect src_frect = {
+                cmd.src_rect.position.x.to_float(),
+                cmd.src_rect.position.y.to_float(),
+                cmd.src_rect.size.x.to_float(),
+                cmd.src_rect.size.y.to_float()
+            };
+            if (rot_deg != 0.0) {
+                SDL_RenderTextureRotated(renderer, tex, &src_frect, &dst_rect, rot_deg, NULL, SDL_FLIP_NONE);
+            } else {
+                SDL_RenderTexture(renderer, tex, &src_frect, &dst_rect);
+            }
+        } else {
+            SDL_SetRenderDrawColor(renderer, cmd.color.r, cmd.color.g, cmd.color.b, cmd.color.a);
+            SDL_RenderFillRect(renderer, &dst_rect);
+        }
+    }
+
+    last_draw_call_count = render_queue.size();
+    render_queue.clear();
+}
+
 void VisualServer::render_scene(float alpha) {
     if (!renderer || !virtual_framebuffer) return;
 
@@ -108,13 +187,6 @@ void VisualServer::render_scene(float alpha) {
 
     Vector2Fixed active_cam_offset = camera_offset;
     float active_cam_zoom = 1.0f;
-
-#ifdef RN_BUILD_EDITOR
-    if (!EditorState::get()->get_is_play_mode() || !EditorState::get()->is_game_view_active()) {
-        active_cam_offset = EditorState::get()->get_camera().pan;
-        active_cam_zoom = EditorState::get()->get_camera().zoom;
-    }
-#endif
 
     // Draw all submitted quads with frame interpolation & sub-pixel truncation (floor) for retro grid snapping
     for (const auto& cmd : render_queue) {

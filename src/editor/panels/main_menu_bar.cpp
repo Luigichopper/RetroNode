@@ -1,4 +1,5 @@
 #include "main_menu_bar.h"
+#include "project_settings_window.h"
 #include "../editor_state.h"
 #include <imgui.h>
 
@@ -35,6 +36,13 @@ void MainMenuBar::draw() {
                     EditorState::get()->set_selected_instance_id(0);
                     sel->queue_free();
                 }
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Project")) {
+            if (ImGui::MenuItem("⚙️ Project Settings...", NULL)) {
+                ProjectSettingsWindow::is_open = true;
             }
             ImGui::EndMenu();
         }
@@ -87,6 +95,8 @@ void MainMenuBar::draw() {
 
         ImGui::EndMainMenuBar();
     }
+
+    ProjectSettingsWindow::draw();
 }
 
 } // namespace RetroNode

@@ -74,10 +74,16 @@ public:
     void render(float alpha);
 
     SDL_Texture* get_framebuffer_texture() const { return virtual_framebuffer; }
+    SDL_Texture* get_editor_framebuffer_texture(int width, int height);
+    void render_editor_scene(float alpha, int width, int height, const Vector2Fixed& cam_pan, float cam_zoom);
     SDL_Renderer* get_renderer() const { return renderer; }
 
     int get_virtual_width() const { return virtual_width; }
     int get_virtual_height() const { return virtual_height; }
+private:
+    SDL_Texture* editor_framebuffer = nullptr;
+    int editor_width = 0;
+    int editor_height = 0;
 };
 
 } // namespace RetroNode

@@ -63,6 +63,47 @@ void TileMapLayer::setup_map(int p_cols, int p_rows, int p_tile_sz, const std::v
     tile_size = p_tile_sz;
     tile_data = p_tiles;
     collision_data = p_collisions;
+    cell_metadata.resize(columns * rows, 0);
+}
+
+int TileMapLayer::get_cell(int col, int row) const {
+    if (col < 0 || col >= columns || row < 0 || row >= rows) return -1;
+    size_t idx = row * columns + col;
+    return (idx < tile_data.size()) ? tile_data[idx] : -1;
+}
+
+bool TileMapLayer::is_cell_solid(int col, int row) const {
+    if (col < 0 || col >= columns || row < 0 || row >= rows) return false;
+    size_t idx = row * columns + col;
+    return (idx < collision_data.size()) ? collision_data[idx] : false;
+}
+
+uint32_t TileMapLayer::get_cell_metadata(int col, int row) const {
+    if (col < 0 || col >= columns || row < 0 || row >= rows) return 0;
+    size_t idx = row * columns + col;
+    return (idx < cell_metadata.size()) ? cell_metadata[idx] : 0;
+}
+
+void TileMapLayer::set_cell(int col, int row, int tile_idx, bool solid, uint32_t metadata) {
+    if (col < 0 || col >= columns || row < 0 || row >= rows) return;
+    size_t idx = row * columns + col;
+    if (idx >= tile_data.size()) {
+        tile_data.resize(columns * rows, -1);
+        collision_data.resize(columns * rows, false);
+        cell_metadata.resize(columns * rows, 0);
+    }
+    tile_data[idx] = tile_idx;
+    collision_data[idx] = solid;
+    cell_metadata[idx] = metadata;
+}
+
+void TileMapLayer::set_cell_metadata(int col, int row, uint32_t metadata) {
+    if (col < 0 || col >= columns || row < 0 || row >= rows) return;
+    size_t idx = row * columns + col;
+    if (idx >= cell_metadata.size()) {
+        cell_metadata.resize(columns * rows, 0);
+    }
+    cell_metadata[idx] = metadata;
 }
 
 void TileMapLayer::_ready() {

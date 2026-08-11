@@ -94,8 +94,11 @@ std::vector<Node2D*> PhysicsServer2D::get_overlapping_bodies_for_box(const Rect2
     return result;
 }
 
-Vector2Fixed PhysicsServer2D::move_and_slide(uint64_t body_id, Vector2Fixed position, Vector2Fixed size, Vector2Fixed velocity, Fixed16 delta) {
+KinematicCollision2D PhysicsServer2D::move_and_slide(uint64_t body_id, Vector2Fixed position, Vector2Fixed size, Vector2Fixed velocity, Fixed16 delta) {
     (void)body_id;
+    KinematicCollision2D result;
+    result.new_position = position;
+
     Vector2Fixed move_step = velocity * delta;
     Vector2Fixed new_pos = position;
 
@@ -107,10 +110,16 @@ Vector2Fixed PhysicsServer2D::move_and_slide(uint64_t body_id, Vector2Fixed posi
     for (size_t idx : nearby_x) {
         const auto& static_body = static_bodies[idx];
         if (test_rect_x.intersects(static_body.bounds)) {
+            result.collided = true;
+            result.on_wall = true;
+            result.collided_body_id = static_body.id;
+
             if (move_step.x > Fixed16(0)) {
                 new_pos.x = static_body.bounds.position.x - size.x;
+                result.normal = Vector2Fixed::from_floats(-1.0f, 0.0f);
             } else if (move_step.x < Fixed16(0)) {
                 new_pos.x = static_body.bounds.position.x + static_body.bounds.size.x;
+                result.normal = Vector2Fixed::from_floats(1.0f, 0.0f);
             }
             break;
         }
@@ -124,16 +133,26 @@ Vector2Fixed PhysicsServer2D::move_and_slide(uint64_t body_id, Vector2Fixed posi
     for (size_t idx : nearby_y) {
         const auto& static_body = static_bodies[idx];
         if (test_rect_y.intersects(static_body.bounds)) {
+            result.collided = true;
+            result.collided_body_id = static_body.id;
+
             if (move_step.y > Fixed16(0)) {
+                // Moving down -> Landed on floor
                 new_pos.y = static_body.bounds.position.y - size.y;
+                result.on_floor = true;
+                result.normal = Vector2Fixed::from_floats(0.0f, -1.0f);
             } else if (move_step.y < Fixed16(0)) {
+                // Moving up -> Hit ceiling
                 new_pos.y = static_body.bounds.position.y + static_body.bounds.size.y;
+                result.on_ceiling = true;
+                result.normal = Vector2Fixed::from_floats(0.0f, 1.0f);
             }
             break;
         }
     }
 
-    return new_pos;
+    result.new_position = new_pos;
+    return result;
 }
 
 } // namespace RetroNode

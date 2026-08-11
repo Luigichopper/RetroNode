@@ -20,6 +20,7 @@ public:
 
     std::vector<int> tile_data;
     std::vector<bool> collision_data;
+    std::vector<uint32_t> cell_metadata;
     int z_index = -10;
     SDL_Color modulate = { 255, 255, 255, 255 };
 
@@ -56,6 +57,13 @@ public:
     int get_tile_size() const { return tile_size; }
 
     void setup_map(int p_cols, int p_rows, int p_tile_sz, const std::vector<int>& p_tiles, const std::vector<bool>& p_collisions);
+
+    int get_cell(int col, int row) const;
+    bool is_cell_solid(int col, int row) const;
+    uint32_t get_cell_metadata(int col, int row) const;
+
+    void set_cell(int col, int row, int tile_idx, bool solid = false, uint32_t metadata = 0);
+    void set_cell_metadata(int col, int row, uint32_t metadata);
 
     virtual void _ready() override;
     virtual void _process(float delta) override;

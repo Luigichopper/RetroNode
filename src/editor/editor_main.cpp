@@ -5,6 +5,8 @@
 #include "panels/inspector_panel.h"
 #include "panels/filesystem_panel.h"
 #include "panels/viewport_panel.h"
+#include "panels/game_view_panel.h"
+#include "panels/tilemap_panel.h"
 #include "../servers/visual_server.h"
 
 #include <imgui.h>
@@ -91,7 +93,9 @@ void EditorMain::render_frame(float alpha) {
     io.FontGlobalScale = EditorState::get()->get_ui_scale();
 
     // Global Editor Keyboard Shortcuts
-    if (io.KeyCtrl && !io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z)) {
+    if (io.KeyCtrl && !io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_S)) {
+        EditorState::get()->save_current_scene();
+    } else if (io.KeyCtrl && !io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z)) {
         EditorState::get()->undo();
     } else if (io.KeyCtrl && (ImGui::IsKeyPressed(ImGuiKey_Y) || (io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z)))) {
         EditorState::get()->redo();
@@ -112,6 +116,8 @@ void EditorMain::render_frame(float alpha) {
     InspectorPanel::draw();
     FileSystemPanel::draw();
     ViewportPanel::draw();
+    GameViewPanel::draw();
+    TilemapPanel::draw();
 
     // 5. Render ImGui Draw Commands to Window Screen
     ImGui::Render();

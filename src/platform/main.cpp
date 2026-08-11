@@ -370,6 +370,9 @@ int main(int argc, char* argv[]) {
                     virtual_height = disp.value("virtual_height", virtual_height);
                     target_fps = disp.value("target_fps", target_fps);
                 }
+                if (config.contains("input") && config["input"].is_object()) {
+                    Input::get()->load_from_json(config["input"]);
+                }
                 std::cout << "[RetroNode Engine] Parsed project configuration from: " << rnode_path << std::endl;
             }
         } catch (const std::exception& e) {

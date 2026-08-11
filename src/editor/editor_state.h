@@ -18,7 +18,7 @@ private:
     static EditorState* instance;
 
     uint64_t selected_instance_id = 0;
-    EditorCamera2D camera;
+    std::unordered_map<std::string, EditorCamera2D> scene_cameras;
 
     bool is_play_mode = false;
     bool is_paused = false;
@@ -64,7 +64,12 @@ public:
         return dynamic_cast<Node*>(get_selected_object());
     }
 
-    EditorCamera2D& get_camera() { return camera; }
+    EditorCamera2D& get_camera_for_scene(const std::string& scene_path) {
+        std::string path = scene_path.empty() ? current_scene_path : scene_path;
+        if (path.empty()) path = "__default__";
+        return scene_cameras[path];
+    }
+    EditorCamera2D& get_camera() { return get_camera_for_scene(current_scene_path); }
 
     bool get_is_play_mode() const { return is_play_mode; }
     bool get_is_paused() const { return is_paused; }
@@ -131,6 +136,8 @@ public:
     void save_current_scene();
     void save_current_scene_as(const std::string& filepath);
     void new_scene();
+    void reload_instanced_subscenes(const std::string& saved_filepath);
+    void reload_instanced_subscenes_in_tree(Node* node, const std::string& saved_filepath);
 
     std::string get_node_path(const Node* node) const;
     Node* find_node_by_path(Node* root, const std::string& path) const;

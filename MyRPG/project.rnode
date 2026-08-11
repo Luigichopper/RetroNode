@@ -1,12 +1,44 @@
 {
-  "name": "MyRPG",
-  "version": "1.0.0",
-  "main_scene": "res://scenes/overworld.json",
-  "display": {
-    "window_width": 1024,
-    "window_height": 896,
-    "virtual_width": 256,
-    "virtual_height": 224,
-    "target_fps": 60
-  }
+    "display": {
+        "target_fps": 60,
+        "virtual_height": 224,
+        "virtual_width": 256,
+        "window_height": 896,
+        "window_width": 1024
+    },
+    "input": {
+        "action_attack": [
+            "J"
+        ],
+        "action_jump": [
+            "Z"
+        ],
+        "action_run": [
+            "Left Shift",
+            "X"
+        ],
+        "ui_accept": [
+            "Space",
+            "Return"
+        ],
+        "ui_down": [
+            "Down",
+            "S"
+        ],
+        "ui_left": [
+            "A",
+            "Left"
+        ],
+        "ui_right": [
+            "D",
+            "Right"
+        ],
+        "ui_up": [
+            "W",
+            "Up"
+        ]
+    },
+    "main_scene": "res://scenes/overworld.json",
+    "name": "MyRPG",
+    "version": "1.0.0"
 }

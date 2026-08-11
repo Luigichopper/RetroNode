@@ -124,6 +124,9 @@ if (RN_BUILD_EDITOR)
         src/editor/panels/inspector_panel.cpp
         src/editor/panels/filesystem_panel.cpp
         src/editor/panels/viewport_panel.cpp
+        src/editor/panels/game_view_panel.cpp
+        src/editor/panels/project_settings_window.cpp
+        src/editor/panels/tilemap_panel.cpp
     )
 endif()
 

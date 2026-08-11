@@ -24,6 +24,18 @@ struct ActiveBodyInfo {
     Rect2Fixed bounds;
 };
 
+struct KinematicCollision2D {
+    bool collided = false;
+    bool on_floor = false;
+    bool on_ceiling = false;
+    bool on_wall = false;
+    Vector2Fixed new_position;
+    Vector2Fixed normal;
+    uint64_t collided_body_id = 0;
+    int tile_col = -1;
+    int tile_row = -1;
+};
+
 class RN_API PhysicsServer2D {
 private:
     static PhysicsServer2D* instance;
@@ -56,7 +68,7 @@ public:
     std::vector<size_t> get_nearby_body_indices(const Rect2Fixed& bounds) const;
     std::vector<Node2D*> get_overlapping_bodies_for_box(const Rect2Fixed& bounds, Node2D* self = nullptr) const;
 
-    Vector2Fixed move_and_slide(uint64_t body_id, Vector2Fixed position, Vector2Fixed size, Vector2Fixed velocity, Fixed16 delta);
+    KinematicCollision2D move_and_slide(uint64_t body_id, Vector2Fixed position, Vector2Fixed size, Vector2Fixed velocity, Fixed16 delta);
 };
 
 } // namespace RetroNode

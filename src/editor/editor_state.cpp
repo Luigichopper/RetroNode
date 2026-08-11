@@ -179,6 +179,7 @@ void EditorState::save_current_scene() {
     }
     if (SceneLoader::save_scene_to_file(root, current_scene_path)) {
         status_message = "Saved scene: " + current_scene_path;
+        reload_instanced_subscenes(current_scene_path);
     } else {
         status_message = "Error saving scene to " + current_scene_path;
     }
@@ -190,8 +191,63 @@ void EditorState::save_current_scene_as(const std::string& filepath) {
     if (SceneLoader::save_scene_to_file(root, filepath)) {
         current_scene_path = filepath;
         status_message = "Saved scene as: " + filepath;
+        reload_instanced_subscenes(filepath);
     } else {
         status_message = "Error saving scene to " + filepath;
+    }
+}
+
+void EditorState::reload_instanced_subscenes_in_tree(Node* node, const std::string& saved_filepath) {
+    if (!node) return;
+    std::vector<Node*> children = node->get_children();
+    for (size_t i = 0; i < children.size(); ++i) {
+        Node* child = children[i];
+        if (child && child->is_instanced_subscene()) {
+            std::string inst_path = child->get_scene_instance_path();
+            std::string res_inst = inst_path;
+            if (res_inst.rfind("res://", 0) == 0) res_inst = res_inst.substr(6);
+            std::string res_saved = saved_filepath;
+            if (res_saved.rfind("res://", 0) == 0) res_saved = res_saved.substr(6);
+
+            size_t slash1 = res_inst.find_last_of("/\\");
+            std::string fname1 = (slash1 != std::string::npos) ? res_inst.substr(slash1 + 1) : res_inst;
+            size_t slash2 = res_saved.find_last_of("/\\");
+            std::string fname2 = (slash2 != std::string::npos) ? res_saved.substr(slash2 + 1) : res_saved;
+
+            if (inst_path == saved_filepath || res_inst == res_saved || fname1 == fname2) {
+                std::string cname = child->get_name();
+                Node2D* n2d = dynamic_cast<Node2D*>(child);
+                Vector2Fixed pos = n2d ? n2d->get_position() : Vector2Fixed::zero();
+                Fixed16 rot = n2d ? n2d->get_rotation() : Fixed16(0);
+                Vector2Fixed scl = n2d ? n2d->get_scale() : Vector2Fixed::one();
+
+                Node* new_inst = SceneLoader::load_scene_from_file(saved_filepath);
+                if (new_inst) {
+                    new_inst->set_scene_instance_path(inst_path);
+                    new_inst->set_name(cname);
+                    Node2D* new_n2d = dynamic_cast<Node2D*>(new_inst);
+                    if (new_n2d) {
+                        new_n2d->set_position(pos);
+                        new_n2d->set_rotation(rot);
+                        new_n2d->set_scale(scl);
+                    }
+                    node->remove_child(child);
+                    delete child;
+                    node->add_child(new_inst);
+                    std::cout << "[EditorState] Live reloaded instanced subscene: " << cname << " (" << inst_path << ")" << std::endl;
+                    continue;
+                }
+            }
+        }
+        reload_instanced_subscenes_in_tree(child, saved_filepath);
+    }
+}
+
+void EditorState::reload_instanced_subscenes(const std::string& saved_filepath) {
+    if (saved_filepath.empty()) return;
+    reload_instanced_subscenes_in_tree(SceneTree::get()->get_root(), saved_filepath);
+    if (play_mode_root) {
+        reload_instanced_subscenes_in_tree(play_mode_root, saved_filepath);
     }
 }
 

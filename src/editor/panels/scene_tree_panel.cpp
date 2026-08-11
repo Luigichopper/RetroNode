@@ -3,11 +3,15 @@
 #include "../../core/object/class_db.h"
 #include <imgui.h>
 #include <iostream>
+#include <cstring>
 
 namespace RetroNode {
 
 static bool show_add_node_popup = false;
+static bool show_rename_popup = false;
 static Node* popup_target_node = nullptr;
+static Node* renaming_node = nullptr;
+static char rename_buf[128] = "";
 
 void SceneTreePanel::draw_node_tree(Node* node) {
     if (!node) return;
@@ -42,12 +46,28 @@ void SceneTreePanel::draw_node_tree(Node* node) {
     // Context Menu
     if (ImGui::BeginPopupContextItem()) {
         EditorState::get()->set_selected_instance_id(instance_id);
-        if (ImGui::MenuItem("Add Child Node...")) {
+        if (ImGui::MenuItem("➕ Add Child Node...")) {
             popup_target_node = node;
             show_add_node_popup = true;
         }
         if (node->get_parent()) {
-            if (ImGui::MenuItem("Delete Node")) {
+            if (ImGui::MenuItem("📋 Duplicate", "Ctrl+D")) {
+                EditorState::get()->push_undo_snapshot();
+                Node* dup = node->duplicate();
+                if (dup) {
+                    dup->set_name(node->get_name() + "_copy");
+                    node->get_parent()->add_child(dup);
+                    EditorState::get()->set_selected_instance_id(dup->get_instance_id());
+                }
+            }
+            if (ImGui::MenuItem("✏️ Rename", "F2")) {
+                renaming_node = node;
+                strncpy(rename_buf, node->get_name().c_str(), sizeof(rename_buf));
+                show_rename_popup = true;
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("🗑️ Delete Node", "Del")) {
+                EditorState::get()->push_undo_snapshot();
                 EditorState::get()->set_selected_instance_id(0);
                 node->queue_free();
             }
@@ -67,6 +87,20 @@ void SceneTreePanel::draw() {
     ImGui::Begin("Scene Tree");
 
     Node* root = EditorState::get()->get_active_root();
+    Node* selected_node = EditorState::get()->get_selected_node();
+    ImGuiIO& io = ImGui::GetIO();
+
+    // Node Shortcuts (Duplicate: Ctrl+D)
+    if (selected_node && selected_node->get_parent() && ImGui::IsWindowFocused() && io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_D)) {
+        EditorState::get()->push_undo_snapshot();
+        Node* dup = selected_node->duplicate();
+        if (dup) {
+            dup->set_name(selected_node->get_name() + "_copy");
+            selected_node->get_parent()->add_child(dup);
+            EditorState::get()->set_selected_instance_id(dup->get_instance_id());
+        }
+    }
+
     if (root) {
         draw_node_tree(root);
     } else {
@@ -122,6 +156,30 @@ void SceneTreePanel::draw() {
         ImGui::EndChild();
 
         if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    // Rename Node Modal / Popup
+    if (show_rename_popup) {
+        ImGui::OpenPopup("Rename Node");
+        show_rename_popup = false;
+    }
+
+    if (ImGui::BeginPopupModal("Rename Node", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("New Node Name:");
+        ImGui::InputText("##RenameInput", rename_buf, sizeof(rename_buf));
+        ImGui::Separator();
+        if (ImGui::Button("OK", ImVec2(100, 0)) && rename_buf[0] != '\0') {
+            if (renaming_node) {
+                EditorState::get()->push_undo_snapshot();
+                renaming_node->set_name(rename_buf);
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(100, 0))) {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();

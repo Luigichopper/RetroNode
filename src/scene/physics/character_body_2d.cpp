@@ -40,9 +40,13 @@ void CharacterBody2D::move_and_slide() {
     effective_size = box.size;
   }
 
-  Vector2Fixed new_pos = PhysicsServer2D::get()->move_and_slide(
+  last_collision = PhysicsServer2D::get()->move_and_slide(
       get_instance_id(), position, effective_size, velocity, last_delta);
-  position = new_pos;
+  
+  position = last_collision.new_position;
+  on_floor = last_collision.on_floor;
+  on_ceiling = last_collision.on_ceiling;
+  on_wall = last_collision.on_wall;
 
   // Register active body bounds with PhysicsServer2D for Area2D triggers
   Rect2Fixed current_bounds(position, effective_size);
