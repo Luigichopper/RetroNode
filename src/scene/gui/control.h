@@ -28,7 +28,9 @@ public:
 
     void set_position(const Vector2Fixed& pos) {
         position = pos;
-        previous_position = pos;
+    }
+    void reset_physics_interpolation() {
+        previous_position = position;
     }
     Vector2Fixed get_position() const { return position; }
 

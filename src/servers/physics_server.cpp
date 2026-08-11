@@ -107,22 +107,40 @@ KinematicCollision2D PhysicsServer2D::move_and_slide(uint64_t body_id, Vector2Fi
     Rect2Fixed test_rect_x(new_pos, size);
     std::vector<size_t> nearby_x = get_nearby_body_indices(test_rect_x);
 
+    bool x_collided = false;
+    Fixed16 best_x = new_pos.x;
+    uint64_t best_x_body = 0;
+    Vector2Fixed best_x_normal;
+
     for (size_t idx : nearby_x) {
         const auto& static_body = static_bodies[idx];
         if (test_rect_x.intersects(static_body.bounds)) {
-            result.collided = true;
-            result.on_wall = true;
-            result.collided_body_id = static_body.id;
-
             if (move_step.x > Fixed16(0)) {
-                new_pos.x = static_body.bounds.position.x - size.x;
-                result.normal = Vector2Fixed::from_floats(-1.0f, 0.0f);
+                Fixed16 candidate_x = static_body.bounds.position.x - size.x;
+                if (!x_collided || candidate_x < best_x) {
+                    x_collided = true;
+                    best_x = candidate_x;
+                    best_x_body = static_body.id;
+                    best_x_normal = Vector2Fixed::from_floats(-1.0f, 0.0f);
+                }
             } else if (move_step.x < Fixed16(0)) {
-                new_pos.x = static_body.bounds.position.x + static_body.bounds.size.x;
-                result.normal = Vector2Fixed::from_floats(1.0f, 0.0f);
+                Fixed16 candidate_x = static_body.bounds.position.x + static_body.bounds.size.x;
+                if (!x_collided || candidate_x > best_x) {
+                    x_collided = true;
+                    best_x = candidate_x;
+                    best_x_body = static_body.id;
+                    best_x_normal = Vector2Fixed::from_floats(1.0f, 0.0f);
+                }
             }
-            break;
         }
+    }
+
+    if (x_collided) {
+        result.collided = true;
+        result.on_wall = true;
+        result.collided_body_id = best_x_body;
+        result.normal = best_x_normal;
+        new_pos.x = best_x;
     }
 
     // 2. Move along Y axis & check spatial grid cell collisions
@@ -130,25 +148,47 @@ KinematicCollision2D PhysicsServer2D::move_and_slide(uint64_t body_id, Vector2Fi
     Rect2Fixed test_rect_y(new_pos, size);
     std::vector<size_t> nearby_y = get_nearby_body_indices(test_rect_y);
 
+    bool y_collided = false;
+    Fixed16 best_y = new_pos.y;
+    uint64_t best_y_body = 0;
+    Vector2Fixed best_y_normal;
+    bool is_floor = false;
+    bool is_ceiling = false;
+
     for (size_t idx : nearby_y) {
         const auto& static_body = static_bodies[idx];
         if (test_rect_y.intersects(static_body.bounds)) {
-            result.collided = true;
-            result.collided_body_id = static_body.id;
-
             if (move_step.y > Fixed16(0)) {
-                // Moving down -> Landed on floor
-                new_pos.y = static_body.bounds.position.y - size.y;
-                result.on_floor = true;
-                result.normal = Vector2Fixed::from_floats(0.0f, -1.0f);
+                Fixed16 candidate_y = static_body.bounds.position.y - size.y;
+                if (!y_collided || candidate_y < best_y) {
+                    y_collided = true;
+                    best_y = candidate_y;
+                    best_y_body = static_body.id;
+                    best_y_normal = Vector2Fixed::from_floats(0.0f, -1.0f);
+                    is_floor = true;
+                    is_ceiling = false;
+                }
             } else if (move_step.y < Fixed16(0)) {
-                // Moving up -> Hit ceiling
-                new_pos.y = static_body.bounds.position.y + static_body.bounds.size.y;
-                result.on_ceiling = true;
-                result.normal = Vector2Fixed::from_floats(0.0f, 1.0f);
+                Fixed16 candidate_y = static_body.bounds.position.y + static_body.bounds.size.y;
+                if (!y_collided || candidate_y > best_y) {
+                    y_collided = true;
+                    best_y = candidate_y;
+                    best_y_body = static_body.id;
+                    best_y_normal = Vector2Fixed::from_floats(0.0f, 1.0f);
+                    is_floor = false;
+                    is_ceiling = true;
+                }
             }
-            break;
         }
+    }
+
+    if (y_collided) {
+        result.collided = true;
+        result.collided_body_id = best_y_body;
+        result.normal = best_y_normal;
+        result.on_floor = is_floor;
+        result.on_ceiling = is_ceiling;
+        new_pos.y = best_y;
     }
 
     result.new_position = new_pos;

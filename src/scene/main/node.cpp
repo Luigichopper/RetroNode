@@ -96,8 +96,8 @@ void Node::remove_child(Node* child) {
 
 void Node::propagate_ready() {
     _ready();
-    auto children_copy = children;
-    for (Node* child : children_copy) {
+    for (size_t i = 0; i < children.size(); ++i) {
+        Node* child = children[i];
         if (child && !child->is_free_queued()) {
             child->propagate_ready();
         }
@@ -106,8 +106,8 @@ void Node::propagate_ready() {
 
 void Node::propagate_physics_process(Fixed16 delta) {
     _physics_process(delta);
-    auto children_copy = children;
-    for (Node* child : children_copy) {
+    for (size_t i = 0; i < children.size(); ++i) {
+        Node* child = children[i];
         if (child && !child->is_free_queued()) {
             child->propagate_physics_process(delta);
         }
@@ -116,8 +116,8 @@ void Node::propagate_physics_process(Fixed16 delta) {
 
 void Node::propagate_process(float delta) {
     _process(delta);
-    auto children_copy = children;
-    for (Node* child : children_copy) {
+    for (size_t i = 0; i < children.size(); ++i) {
+        Node* child = children[i];
         if (child && !child->is_free_queued()) {
             child->propagate_process(delta);
         }

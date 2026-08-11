@@ -132,7 +132,7 @@ void VisualServer::render_editor_scene(float alpha, int width, int height, const
     SDL_SetRenderDrawColor(renderer, 24, 24, 28, 255);
     SDL_RenderClear(renderer);
 
-    std::sort(render_queue.begin(), render_queue.end(), [](const DrawCommand& a, const DrawCommand& b) {
+    std::stable_sort(render_queue.begin(), render_queue.end(), [](const DrawCommand& a, const DrawCommand& b) {
         return a.z_index < b.z_index;
     });
 
@@ -175,13 +175,14 @@ void VisualServer::render_editor_scene(float alpha, int width, int height, const
 }
 
 void VisualServer::render_scene(float alpha) {
+    current_render_alpha = alpha;
     if (!renderer || !virtual_framebuffer) return;
 
     SDL_SetRenderTarget(renderer, virtual_framebuffer);
     SDL_SetRenderDrawColor(renderer, 20, 20, 24, 255);
     SDL_RenderClear(renderer);
 
-    std::sort(render_queue.begin(), render_queue.end(), [](const DrawCommand& a, const DrawCommand& b) {
+    std::stable_sort(render_queue.begin(), render_queue.end(), [](const DrawCommand& a, const DrawCommand& b) {
         return a.z_index < b.z_index;
     });
 

@@ -12,7 +12,6 @@ const std::string* StringName::intern(const std::string& str) {
     if (str.empty()) {
         return &empty_string;
     }
-    std::lock_guard<std::mutex> lock(pool_mutex);
     auto res = string_pool.insert(str);
     return &(*res.first);
 }

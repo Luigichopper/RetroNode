@@ -42,9 +42,10 @@ void InspectorPanel::draw() {
     }
 
     std::vector<PropertyInfo> props = target->get_property_list();
+    static const StringName s_name("name");
 
     for (const auto& pinfo : props) {
-        if (pinfo.name == StringName("name")) continue; // Handled above
+        if (pinfo.name == s_name) continue; // Handled above
 
         std::string label = pinfo.name.as_string();
         Variant val = ClassDB::get_property(target, pinfo.name);
@@ -53,6 +54,7 @@ void InspectorPanel::draw() {
         }
 
         ImGui::PushID(label.c_str());
+        bool value_changed = false;
 
         switch (pinfo.type) {
             case VariantType::BOOL: {
@@ -62,6 +64,7 @@ void InspectorPanel::draw() {
                     if (!target->set(pinfo.name, new_val)) {
                         ClassDB::set_property(target, pinfo.name, new_val);
                     }
+                    value_changed = true;
                 }
                 break;
             }
@@ -72,6 +75,7 @@ void InspectorPanel::draw() {
                     if (!target->set(pinfo.name, new_val)) {
                         ClassDB::set_property(target, pinfo.name, new_val);
                     }
+                    value_changed = true;
                 }
                 break;
             }
@@ -82,6 +86,7 @@ void InspectorPanel::draw() {
                     if (!target->set(pinfo.name, new_val)) {
                         ClassDB::set_property(target, pinfo.name, new_val);
                     }
+                    value_changed = true;
                 }
                 break;
             }
@@ -93,6 +98,7 @@ void InspectorPanel::draw() {
                     if (!target->set(pinfo.name, new_val)) {
                         ClassDB::set_property(target, pinfo.name, new_val);
                     }
+                    value_changed = true;
                 }
                 break;
             }
@@ -105,6 +111,7 @@ void InspectorPanel::draw() {
                     if (!target->set(pinfo.name, new_val)) {
                         ClassDB::set_property(target, pinfo.name, new_val);
                     }
+                    value_changed = true;
                 }
                 break;
             }
@@ -122,6 +129,7 @@ void InspectorPanel::draw() {
                     if (!target->set(pinfo.name, new_val)) {
                         ClassDB::set_property(target, pinfo.name, new_val);
                     }
+                    value_changed = true;
                 }
                 break;
             }
@@ -134,6 +142,7 @@ void InspectorPanel::draw() {
                     if (!target->set(pinfo.name, new_val)) {
                         ClassDB::set_property(target, pinfo.name, new_val);
                     }
+                    value_changed = true;
                 }
 
                 // Asset Drag-and-Drop Target
@@ -144,6 +153,7 @@ void InspectorPanel::draw() {
                         if (!target->set(pinfo.name, new_val)) {
                             ClassDB::set_property(target, pinfo.name, new_val);
                         }
+                        value_changed = true;
                     }
                     ImGui::EndDragDropTarget();
                 }
@@ -151,6 +161,10 @@ void InspectorPanel::draw() {
             }
             default:
                 break;
+        }
+
+        if (value_changed || ImGui::IsItemDeactivatedAfterEdit()) {
+            EditorState::get()->push_undo_snapshot();
         }
 
         ImGui::PopID();

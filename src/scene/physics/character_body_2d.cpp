@@ -10,6 +10,10 @@ CharacterBody2D::CharacterBody2D()
   name = "CharacterBody2D";
 }
 
+CharacterBody2D::~CharacterBody2D() {
+  PhysicsServer2D::get()->unregister_active_body(get_instance_id());
+}
+
 void CharacterBody2D::_ready() {
   Node2D::_ready();
   update_shapes();

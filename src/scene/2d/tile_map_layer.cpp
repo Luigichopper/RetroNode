@@ -122,7 +122,8 @@ void TileMapLayer::_ready() {
                     static_cast<float>(tile_size),
                     static_cast<float>(tile_size)
                 );
-                PhysicsServer2D::get()->add_static_box(get_instance_id() + idx, bounds);
+                uint64_t tile_box_id = 0x8000000000000000ULL | (get_instance_id() << 32) | static_cast<uint64_t>(idx);
+                PhysicsServer2D::get()->add_static_box(tile_box_id, bounds);
             }
         }
     }
@@ -159,8 +160,25 @@ void TileMapLayer::_process(float delta) {
 
     int tileset_cols = cached_tileset_cols;
 
-    for (int r = 0; r < rows; ++r) {
-        for (int c = 0; c < columns; ++c) {
+    int min_c = 0;
+    int max_c = columns - 1;
+    int min_r = 0;
+    int max_r = rows - 1;
+
+    if (!is_editor) {
+        float rel_min_x = (cam_min_x - global_pos.x).to_float();
+        float rel_max_x = (cam_max_x - global_pos.x).to_float();
+        float rel_min_y = (cam_min_y - global_pos.y).to_float();
+        float rel_max_y = (cam_max_y - global_pos.y).to_float();
+
+        min_c = std::max(0, static_cast<int>(std::floor(rel_min_x / tile_size)));
+        max_c = std::min(columns - 1, static_cast<int>(std::ceil(rel_max_x / tile_size)));
+        min_r = std::max(0, static_cast<int>(std::floor(rel_min_y / tile_size)));
+        max_r = std::min(rows - 1, static_cast<int>(std::ceil(rel_max_y / tile_size)));
+    }
+
+    for (int r = min_r; r <= max_r; ++r) {
+        for (int c = min_c; c <= max_c; ++c) {
             size_t idx = r * columns + c;
             if (idx >= tile_data.size()) continue;
 
@@ -172,12 +190,6 @@ void TileMapLayer::_process(float delta) {
 
             Fixed16 world_x = global_pos.x + Fixed16::from_int(c * tile_size);
             Fixed16 world_y = global_pos.y + Fixed16::from_int(r * tile_size);
-
-            if (!is_editor) {
-                if (world_x < cam_min_x || world_x > cam_max_x || world_y < cam_min_y || world_y > cam_max_y) {
-                    continue;
-                }
-            }
 
             Fixed16 prev_world_x = global_prev_pos.x + Fixed16::from_int(c * tile_size);
             Fixed16 prev_world_y = global_prev_pos.y + Fixed16::from_int(r * tile_size);

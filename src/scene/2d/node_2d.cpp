@@ -48,12 +48,29 @@ bool Node2D::set(const StringName& p_name, const Variant& p_value) {
     return Node::set(p_name, p_value);
 }
 
+#include <cmath>
+
 Vector2Fixed Node2D::get_global_position() const {
     Vector2Fixed global_pos = position;
     const Node* p = get_parent();
     while (p) {
         const Node2D* n2d = dynamic_cast<const Node2D*>(p);
         if (n2d) {
+            // 1. Scale
+            global_pos.x *= n2d->scale.x;
+            global_pos.y *= n2d->scale.y;
+
+            // 2. Rotate
+            if (n2d->rotation.raw != 0) {
+                float rad = n2d->rotation.to_float();
+                float cos_a = std::cos(rad);
+                float sin_a = std::sin(rad);
+                float rx = global_pos.x.to_float() * cos_a - global_pos.y.to_float() * sin_a;
+                float ry = global_pos.x.to_float() * sin_a + global_pos.y.to_float() * cos_a;
+                global_pos = Vector2Fixed::from_floats(rx, ry);
+            }
+
+            // 3. Translate
             global_pos += n2d->position;
         }
         p = p->get_parent();
@@ -67,6 +84,21 @@ Vector2Fixed Node2D::get_global_previous_position() const {
     while (p) {
         const Node2D* n2d = dynamic_cast<const Node2D*>(p);
         if (n2d) {
+            // 1. Scale
+            global_prev.x *= n2d->scale.x;
+            global_prev.y *= n2d->scale.y;
+
+            // 2. Rotate
+            if (n2d->rotation.raw != 0) {
+                float rad = n2d->rotation.to_float();
+                float cos_a = std::cos(rad);
+                float sin_a = std::sin(rad);
+                float rx = global_prev.x.to_float() * cos_a - global_prev.y.to_float() * sin_a;
+                float ry = global_prev.x.to_float() * sin_a + global_prev.y.to_float() * cos_a;
+                global_prev = Vector2Fixed::from_floats(rx, ry);
+            }
+
+            // 3. Translate
             global_prev += n2d->previous_position;
         }
         p = p->get_parent();

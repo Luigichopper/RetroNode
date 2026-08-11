@@ -30,6 +30,7 @@ struct Particle {
     Fixed16 rotation;
     Fixed16 rot_velocity;
     Vector2Fixed scale;
+    float initial_scale = 1.0f;
     SDL_Color color;
     SDL_Color base_color;
     Fixed16 life;
@@ -109,7 +110,7 @@ public:
     ParticleDrawOrder draw_order = ParticleDrawOrder::INDEX;
 
     CPUParticles2D();
-    virtual ~CPUParticles2D() = default;
+    virtual ~CPUParticles2D() override;
 
     virtual void get_property_list(std::vector<PropertyInfo>& out_list) const override;
     virtual Variant get(const StringName& p_name) const override;

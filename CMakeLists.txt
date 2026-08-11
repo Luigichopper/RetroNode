@@ -5,8 +5,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
+endif()
+
 if(MSVC)
-    add_compile_options(/FS)
+    add_compile_options(/FS /W4 /wd4251 /wd4100 $<$<CONFIG:Release>:/O2> $<$<CONFIG:RelWithDebInfo>:/O2>)
+else()
+    add_compile_options(-Wall -Wextra $<$<CONFIG:Release>:-O2> $<$<CONFIG:RelWithDebInfo>:-O2>)
 endif()
 
 option(RN_BUILD_EDITOR "Build RetroNode visual editor" ON)
@@ -162,14 +168,14 @@ else()
 endif()
 
 set_target_properties(retronode_core PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Debug"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Debug"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Debug"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
 )
 
 # Automated Asset Compilation Target (runs texture_packer & map_compiler)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
-if (Python3_FOUND)
+if (Python3_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/MyRPG")
     add_custom_target(compile_game_assets ALL
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tools/texture_packer.py ${CMAKE_CURRENT_SOURCE_DIR}/MyRPG
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tools/map_compiler.py ${CMAKE_CURRENT_SOURCE_DIR}/MyRPG/scenes/player.json ${CMAKE_CURRENT_SOURCE_DIR}/MyRPG/scenes/player.rnb
@@ -187,7 +193,7 @@ if (TARGET compile_game_assets)
 endif()
 
 set_target_properties(retronode PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Debug"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
 )
 
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/MyRPG/CMakeLists.txt")

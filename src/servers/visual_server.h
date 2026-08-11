@@ -32,6 +32,7 @@ private:
     int virtual_height = 224;
 
     Vector2Fixed camera_offset;
+    float current_render_alpha = 1.0f;
     std::vector<DrawCommand> render_queue;
     size_t last_draw_call_count = 0;
 
@@ -51,6 +52,8 @@ public:
 
     void set_camera_offset(const Vector2Fixed& offset) { camera_offset = offset; }
     Vector2Fixed get_camera_offset() const { return camera_offset; }
+
+    float get_current_render_alpha() const { return current_render_alpha; }
 
     size_t get_draw_call_count() const { return last_draw_call_count; }
 

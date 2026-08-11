@@ -56,19 +56,18 @@ uint32_t TextureServer::load_texture(const std::string& filepath) {
         resolved_path = resolved_path.substr(6);
     }
 
-    std::vector<std::string> candidates = {
-        project_dir + "/" + resolved_path,
-        "./" + resolved_path,
-        "./MyRPG/" + resolved_path,
-        "../MyRPG/" + resolved_path,
-        "../../MyRPG/" + resolved_path,
-        filepath
-    };
+    std::vector<std::string> candidates;
+    if (!project_dir.empty()) {
+        candidates.push_back(project_dir + "/" + resolved_path);
+    }
+    candidates.push_back("./" + resolved_path);
+    candidates.push_back(filepath);
 
     std::string final_path = "";
     for (const auto& cand : candidates) {
-        if (fs::exists(cand) && !fs::is_directory(cand)) {
-            final_path = cand;
+        std::error_code ec;
+        if (fs::exists(cand, ec) && !fs::is_directory(cand, ec)) {
+            final_path = fs::weakly_canonical(cand, ec).string();
             break;
         }
     }

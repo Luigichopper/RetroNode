@@ -19,26 +19,36 @@ CPUParticles2D::CPUParticles2D() {
     set_amount(amount);
 }
 
+CPUParticles2D::~CPUParticles2D() {
+    delete color_ramp;
+    delete scale_amount_curve;
+}
+
 void CPUParticles2D::get_property_list(std::vector<PropertyInfo>& out_list) const {
     Node2D::get_property_list(out_list);
-    out_list.push_back({ StringName("emitting"), VariantType::BOOL });
-    out_list.push_back({ StringName("amount"), VariantType::INT });
-    out_list.push_back({ StringName("lifetime"), VariantType::FLOAT16 });
-    out_list.push_back({ StringName("one_shot"), VariantType::BOOL });
-    out_list.push_back({ StringName("speed_scale"), VariantType::FLOAT16 });
-    out_list.push_back({ StringName("explosiveness"), VariantType::FLOAT16 });
-    out_list.push_back({ StringName("direction"), VariantType::VECTOR2 });
-    out_list.push_back({ StringName("spread"), VariantType::FLOAT16 });
-    out_list.push_back({ StringName("gravity"), VariantType::VECTOR2 });
-    out_list.push_back({ StringName("initial_velocity_min"), VariantType::FLOAT16 });
-    out_list.push_back({ StringName("initial_velocity_max"), VariantType::FLOAT16 });
-    out_list.push_back({ StringName("angular_velocity_min"), VariantType::FLOAT16 });
-    out_list.push_back({ StringName("angular_velocity_max"), VariantType::FLOAT16 });
-    out_list.push_back({ StringName("scale_amount_min"), VariantType::FLOAT16 });
-    out_list.push_back({ StringName("scale_amount_max"), VariantType::FLOAT16 });
-    out_list.push_back({ StringName("color"), VariantType::COLOR });
-    out_list.push_back({ StringName("texture"), VariantType::STRING, PropertyHint::FILE_PATH, "*.png" });
-    out_list.push_back({ StringName("z_index"), VariantType::INT });
+    static const PropertyInfo props[] = {
+        { StringName("emitting"), VariantType::BOOL },
+        { StringName("amount"), VariantType::INT },
+        { StringName("lifetime"), VariantType::FLOAT16 },
+        { StringName("one_shot"), VariantType::BOOL },
+        { StringName("speed_scale"), VariantType::FLOAT16 },
+        { StringName("explosiveness"), VariantType::FLOAT16 },
+        { StringName("direction"), VariantType::VECTOR2 },
+        { StringName("spread"), VariantType::FLOAT16 },
+        { StringName("gravity"), VariantType::VECTOR2 },
+        { StringName("initial_velocity_min"), VariantType::FLOAT16 },
+        { StringName("initial_velocity_max"), VariantType::FLOAT16 },
+        { StringName("angular_velocity_min"), VariantType::FLOAT16 },
+        { StringName("angular_velocity_max"), VariantType::FLOAT16 },
+        { StringName("scale_amount_min"), VariantType::FLOAT16 },
+        { StringName("scale_amount_max"), VariantType::FLOAT16 },
+        { StringName("color"), VariantType::COLOR },
+        { StringName("texture"), VariantType::STRING, PropertyHint::FILE_PATH, "*.png" },
+        { StringName("z_index"), VariantType::INT }
+    };
+    for (const auto& p : props) {
+        out_list.push_back(p);
+    }
 }
 
 Variant CPUParticles2D::get(const StringName& p_name) const {
@@ -215,6 +225,7 @@ void CPUParticles2D::spawn_particle(Particle& p) {
     p.rot_velocity = Fixed16::from_float(randf_range(angular_velocity_min.to_float(), angular_velocity_max.to_float()));
 
     float init_scale = randf_range(scale_amount_min.to_float(), scale_amount_max.to_float());
+    p.initial_scale = init_scale;
     p.scale = Vector2Fixed::from_floats(init_scale, init_scale);
 
     p.base_color = color;
@@ -236,7 +247,10 @@ void CPUParticles2D::_physics_process(Fixed16 delta) {
         float emission_rate = static_cast<float>(amount) / std::max(0.01f, lifetime.to_float());
         float spawn_interval = (emission_rate > 0.0f) ? (1.0f / emission_rate) : 9999.0f;
 
-        while (time_accumulator.to_float() >= spawn_interval) {
+        int max_spawns = std::max(1, amount);
+        int spawn_count = 0;
+        while (time_accumulator.to_float() >= spawn_interval && spawn_count < max_spawns) {
+            spawn_count++;
             time_accumulator -= Fixed16::from_float(spawn_interval);
 
             // Find first inactive particle slot to spawn
@@ -244,9 +258,17 @@ void CPUParticles2D::_physics_process(Fixed16 delta) {
             if (it != particles.end()) {
                 spawn_particle(*it);
             } else if (!one_shot) {
-                // Recycle oldest particle if max capacity reached
-                spawn_particle(particles[0]);
+                // Recycle oldest particle (highest lifetime progress) if max capacity reached
+                auto oldest_it = std::max_element(particles.begin(), particles.end(), [](const Particle& a, const Particle& b) {
+                    return a.life < b.life;
+                });
+                if (oldest_it != particles.end()) {
+                    spawn_particle(*oldest_it);
+                }
             }
+        }
+        if (spawn_count >= max_spawns) {
+            time_accumulator = Fixed16::from_float(0.0f);
         }
     }
 
@@ -288,8 +310,8 @@ void CPUParticles2D::_physics_process(Fixed16 delta) {
             p.color = p.base_color;
         }
 
-        // Evaluate Scale Curve
-        float current_scale = randf_range(scale_amount_min.to_float(), scale_amount_max.to_float());
+        // Evaluate Scale Curve from initial_scale
+        float current_scale = p.initial_scale;
         if (scale_amount_curve) {
             current_scale *= scale_amount_curve->sample(t);
         }

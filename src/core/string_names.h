@@ -28,13 +28,13 @@ private:
     static const std::string& get_empty_string();
 
 public:
-    StringName() noexcept : data_ptr(intern("")), hash_value(std::hash<std::string>{}("")) {}
+    StringName() noexcept : data_ptr(intern("")), hash_value(reinterpret_cast<size_t>(data_ptr)) {}
     
     StringName(const char* str) 
-        : data_ptr(intern(str ? str : "")), hash_value(std::hash<std::string>{}(*data_ptr)) {}
+        : data_ptr(intern(str ? str : "")), hash_value(reinterpret_cast<size_t>(data_ptr)) {}
     
     StringName(const std::string& str) 
-        : data_ptr(intern(str)), hash_value(std::hash<std::string>{}(*data_ptr)) {}
+        : data_ptr(intern(str)), hash_value(reinterpret_cast<size_t>(data_ptr)) {}
 
     /// Returns standard null-terminated C-string pointer
     const char* c_str() const noexcept { return data_ptr ? data_ptr->c_str() : ""; }

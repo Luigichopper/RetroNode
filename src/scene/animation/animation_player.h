@@ -26,7 +26,9 @@ private:
     int current_frame_index = 0;
     float frame_timer = 0.0f;
     bool is_playing_flag = false;
-    Sprite2D* target_sprite = nullptr;
+    uint64_t target_sprite_id = 0;
+
+    Sprite2D* resolve_target_sprite();
 
 public:
     AnimationPlayer();
@@ -41,7 +43,7 @@ public:
     const std::string& get_current_animation() const { return current_animation; }
 
     virtual void _ready() override;
-    virtual void _process(float delta) override;
+    virtual void _physics_process(Fixed16 delta) override;
 };
 
 } // namespace RetroNode

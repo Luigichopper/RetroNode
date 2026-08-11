@@ -36,7 +36,7 @@ public:
     KinematicCollision2D get_last_slide_collision() const { return last_collision; }
 
     CharacterBody2D();
-    virtual ~CharacterBody2D() = default;
+    virtual ~CharacterBody2D() override;
 
     virtual void _ready() override;
     void update_shapes();

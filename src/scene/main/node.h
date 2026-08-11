@@ -46,14 +46,7 @@ public:
     const std::string& get_script_path() const { return script_path; }
     bool has_script() const {
         if (!script_path.empty()) return true;
-        std::string cname = get_class_name().as_string();
-        return (cname != "Node" && cname != "Node2D" && cname != "Marker2D" &&
-                cname != "Sprite2D" && cname != "AnimatedSprite2D" &&
-                cname != "TileMapLayer" && cname != "CharacterBody2D" &&
-                cname != "Camera2D" && cname != "Control" && cname != "CanvasLayer" &&
-                cname != "Label" && cname != "NinePatchRect" && cname != "DebugOverlay" &&
-                cname != "AudioStreamPlayer" && cname != "AnimationPlayer" &&
-                cname != "Timer" && cname != "CPUParticles2D");
+        return !ClassDB::get()->is_registered(get_class_name());
     }
 
     Node* get_parent() const { return parent; }

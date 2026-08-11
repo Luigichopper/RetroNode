@@ -10,7 +10,17 @@ Camera2D::Camera2D() {
 
 void Camera2D::_process(float delta) {
     (void)delta;
-    Vector2Fixed global_pos = get_global_position();
+    float alpha = VisualServer::get()->get_current_render_alpha();
+    Vector2Fixed global_prev = get_global_previous_position();
+    Vector2Fixed global_curr = get_global_position();
+
+    Vector2Fixed global_pos;
+    if (alpha < 0.999f && global_prev != global_curr) {
+        global_pos.x = Fixed16::from_float(global_prev.x.to_float() + (global_curr.x.to_float() - global_prev.x.to_float()) * alpha);
+        global_pos.y = Fixed16::from_float(global_prev.y.to_float() + (global_curr.y.to_float() - global_prev.y.to_float()) * alpha);
+    } else {
+        global_pos = global_curr;
+    }
     
     int v_w = VisualServer::get()->get_virtual_width();
     int v_h = VisualServer::get()->get_virtual_height();

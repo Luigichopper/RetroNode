@@ -1,4 +1,5 @@
 #include "undo_redo.h"
+#include "object/object_db.h"
 #include <iostream>
 
 namespace RetroNode {
@@ -11,15 +12,23 @@ void UndoRedo::create_action(const std::string& p_name) {
 
 void UndoRedo::add_do_property(Object* p_target, const StringName& p_prop, const Variant& p_value) {
     if (!is_building_action || !p_target) return;
-    current_action.do_ops.push_back([p_target, p_prop, p_value]() {
-        p_target->set(p_prop, p_value);
+    uint64_t target_id = p_target->get_instance_id();
+    current_action.do_ops.push_back([target_id, p_prop, p_value]() {
+        Object* obj = ObjectDB::get()->get_object(target_id);
+        if (obj) {
+            obj->set(p_prop, p_value);
+        }
     });
 }
 
 void UndoRedo::add_undo_property(Object* p_target, const StringName& p_prop, const Variant& p_value) {
     if (!is_building_action || !p_target) return;
-    current_action.undo_ops.push_back([p_target, p_prop, p_value]() {
-        p_target->set(p_prop, p_value);
+    uint64_t target_id = p_target->get_instance_id();
+    current_action.undo_ops.push_back([target_id, p_prop, p_value]() {
+        Object* obj = ObjectDB::get()->get_object(target_id);
+        if (obj) {
+            obj->set(p_prop, p_value);
+        }
     });
 }
 
