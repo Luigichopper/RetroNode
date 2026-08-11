@@ -1,14 +1,21 @@
 #include "editor_state.h"
 #include "../scene/2d/node_2d.h"
 #include "../servers/physics_server.h"
+#include "../servers/texture_server.h"
+#include "../servers/audio_server.h"
+#include "../platform/game_module.h"
+
 #include <nlohmann/json.hpp>
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 
 using json = nlohmann::json;
+namespace fs = std::filesystem;
 
 namespace RetroNode {
+
 
 EditorState* EditorState::instance = nullptr;
 
@@ -263,4 +270,58 @@ void EditorState::new_scene() {
     status_message = "Created new scene";
 }
 
+void EditorState::load_project_and_launch(const std::string& proj_path) {
+
+    if (proj_path.empty()) return;
+    set_project_dir(proj_path);
+    TextureServer::get()->set_project_dir(proj_path);
+    AudioServer::get()->set_project_dir(proj_path);
+
+    // Load dynamic game logic library for this project to register custom classes (e.g. PlayerController)
+    GameModuleLoader::get()->load_for_project(proj_path);
+
+
+    std::string scene_path = "";
+    if (!main_scene_path.empty()) {
+        std::string res_path = main_scene_path;
+        if (res_path.rfind("res://", 0) == 0) res_path = res_path.substr(6);
+        std::string full_path = proj_path + "/" + res_path;
+        if (full_path.length() > 5 && full_path.substr(full_path.length() - 5) == ".json") {
+            std::string rnb = full_path.substr(0, full_path.length() - 5) + ".rnb";
+            if (fs::exists(rnb)) full_path = rnb;
+        }
+        if (fs::exists(full_path)) scene_path = full_path;
+    }
+
+    if (scene_path.empty()) {
+        std::vector<std::string> candidates = {
+            proj_path + "/scenes/main.json",
+            proj_path + "/scenes/main.rnb",
+            proj_path + "/scenes/overworld.json",
+            proj_path + "/scenes/overworld.rnb"
+        };
+        for (const auto& cand : candidates) {
+            if (fs::exists(cand)) {
+                scene_path = cand;
+                break;
+            }
+        }
+    }
+
+    if (!scene_path.empty()) {
+        open_scene(scene_path);
+    } else {
+        new_scene();
+    }
+
+    is_project_manager_mode = false;
+    status_message = "Loaded project: " + proj_path;
+}
+
+void EditorState::run_project_standalone(const std::string& proj_path) {
+    load_project_and_launch(proj_path);
+    start_play_mode();
+}
+
 } // namespace RetroNode
+

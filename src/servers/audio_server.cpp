@@ -90,13 +90,13 @@ uint32_t AudioServer::load_sound(const std::string& filepath) {
         resolved_path = resolved_path.substr(6);
     }
 
-    std::vector<std::string> candidates = {
-        project_dir + "/" + resolved_path,
-        "./" + resolved_path,
-        "./MyRPG/" + resolved_path,
-        "../MyRPG/" + resolved_path,
-        filepath
-    };
+    std::vector<std::string> candidates;
+    if (!project_dir.empty()) {
+        candidates.push_back(project_dir + "/" + resolved_path);
+    }
+    candidates.push_back("./" + resolved_path);
+    candidates.push_back(filepath);
+
 
     std::string final_path = "";
     for (const auto& cand : candidates) {

@@ -1,0 +1,14 @@
+{
+    "projects": [
+        {
+            "engine_version": "v0.1.0",
+            "icon_path": "",
+            "is_favorite": false,
+            "last_modified": "2026-08-11 16:03",
+            "main_scene": "res://scenes/overworld.json",
+            "name": "MyRPG",
+            "path": "C:\\Users\\Luigi\\Documents\\RetroNode\\MyRPG",
+            "tags": []
+        }
+    ]
+}

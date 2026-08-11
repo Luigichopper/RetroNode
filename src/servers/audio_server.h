@@ -26,7 +26,8 @@ private:
 
     std::vector<SoundSample> samples;
     std::unordered_map<std::string, uint32_t> path_to_id;
-    std::string project_dir = "./MyRPG";
+    std::string project_dir = "";
+
 
     void clean_finished_streams();
 

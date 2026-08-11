@@ -12,18 +12,55 @@
   #include <dlfcn.h>
 #endif
 
-namespace fs = std::filesystem;
-
 namespace RetroNode {
 
-GameModuleLoader::GameModuleLoader(const std::string& p_module_path) 
-    : module_path(p_module_path) {
+namespace fs = std::filesystem;
+
+GameModuleLoader* GameModuleLoader::instance = nullptr;
+
+
+GameModuleLoader::GameModuleLoader(const std::string& p_module_path) {
+    instance = this;
+    set_module_path(p_module_path);
+}
+
+
+void GameModuleLoader::set_module_path(const std::string& p_module_path) {
+    module_path = p_module_path;
     temp_module_path = module_path + ".temp.dll";
+}
+
+bool GameModuleLoader::load_for_project(const std::string& proj_dir) {
+    if (proj_dir.empty()) return false;
+    std::vector<std::string> search_paths = {
+        proj_dir + "/bin/Debug/game.dll",
+        proj_dir + "/bin/Release/game.dll",
+        proj_dir + "/bin/game.dll",
+        proj_dir + "/game.dll",
+        proj_dir + "/bin/libgame.so",
+        proj_dir + "/bin/libgame.dylib"
+    };
+
+    std::string found_path = "";
+    for (const auto& path : search_paths) {
+        std::error_code ec;
+        if (fs::exists(path, ec)) {
+            found_path = path;
+            break;
+        }
+    }
+
+    if (!found_path.empty()) {
+        set_module_path(found_path);
+        return load_module();
+    }
+    return false;
 }
 
 GameModuleLoader::~GameModuleLoader() {
     unload_module();
 }
+
 
 uint64_t GameModuleLoader::get_file_write_time(const std::string& path) {
     std::error_code ec;

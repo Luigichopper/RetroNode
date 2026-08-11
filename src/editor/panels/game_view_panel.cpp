@@ -23,8 +23,9 @@ void GameViewPanel::draw() {
 
         if (avail.x > 0 && avail.y > 0 && v_w > 0 && v_h > 0) {
             int scale_factor = std::max(1, (int)std::min(avail.x / (float)v_w, (avail.y - 32.0f) / (float)v_h));
-            float rendered_w = static_cast<float>(v_w * scale_factor);
-            float rendered_h = static_cast<float>(v_h * scale_factor);
+            float rendered_w = std::floor(static_cast<float>(v_w * scale_factor));
+            float rendered_h = std::floor(static_cast<float>(v_h * scale_factor));
+
 
             float pad_x = std::floor((avail.x - rendered_w) * 0.5f);
             float pad_y = std::floor(((avail.y - 32.0f) - rendered_h) * 0.5f + 32.0f);
@@ -55,13 +56,14 @@ void GameViewPanel::draw() {
 
             ImGui::SetCursorPos(ImVec2(pad_x, pad_y));
 
-            SDL_Texture* tex = VisualServer::get()->get_framebuffer_texture();
+            SDL_Texture* tex = VisualServer::get()->get_scaled_game_framebuffer(static_cast<int>(rendered_w), static_cast<int>(rendered_h));
             if (tex) {
                 SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_NEAREST);
                 ImGui::Image((ImTextureID)(intptr_t)tex, ImVec2(rendered_w, rendered_h));
             } else {
                 ImGui::Dummy(ImVec2(rendered_w, rendered_h));
             }
+
         }
     } else {
         EditorState::get()->set_game_view_active(false);

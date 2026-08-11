@@ -1,12 +1,11 @@
 #include "string_names.h"
 #include <unordered_set>
-#include <mutex>
 
 namespace RetroNode {
 
 static std::unordered_set<std::string> string_pool;
-static std::mutex pool_mutex;
 static const std::string empty_string = "";
+
 
 const std::string* StringName::intern(const std::string& str) {
     if (str.empty()) {

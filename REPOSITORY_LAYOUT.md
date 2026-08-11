@@ -11,6 +11,9 @@ This is the C++ codebase for the engine itself. It compiles down to `retronode.e
 ```text
 RetroNode/
 ├── CMakeLists.txt            # Root build configuration
+├── assets/
+│   └── branding/
+│       └── icon.ico          # Icon for the executable
 ├── src/
 │   ├── core/                 # Foundation: No dependencies on nodes or servers
 │   │   ├── math/             # fixed16.h, vector2.h, rect2.h
@@ -28,13 +31,13 @@ RetroNode/
 │   │   ├── physics_server.h  # AABB Sweeps, Grid spatial hash
 │   │   └── audio_server.h    # Fixed-tick audio mixing
 │   │
-│   ├── platform/             # OS and Windowing layer
-│   │   ├── sdl3/             # sdl_window.cpp, sdl_input.cpp
-│   │   └── main.cpp          # Engine entry point, fixed timestep loop
-│   │
-│   └── tools/                # Command-line asset pipelines
-│       ├── texture_packer/   # Compiles scattered PNGs into atlases
-│       └── map_compiler/     # Converts LDTK/Tiled JSON to flat binary arrays
+│   └── platform/             # OS and Windowing layer
+│       ├── sdl3/             # sdl_window.cpp, sdl_input.cpp
+│       └── main.cpp          # Engine entry point, fixed timestep loop
+│   
+├── tools/                # Command-line asset pipelines
+│   ├── texture_packer/   # Compiles scattered PNGs into atlases
+│   └── map_compiler/     # Converts LDTK/Tiled JSON to flat binary arrays
 │
 └── thirdparty/               # Minimal external libraries
     ├── sdl3/                 # Windowing / Input

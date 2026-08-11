@@ -32,7 +32,9 @@
 #include "editor/editor_state.h"
 #endif
 
+#include <stb_image.h>
 #include <nlohmann/json.hpp>
+
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -195,9 +197,26 @@ void register_engine_classes() {
         &AudioStreamPlayer::set_autoplay, &AudioStreamPlayer::has_autoplay
     );
 
-    RN_REGISTER_CLASS(AnimationPlayer);
+    ClassDB::register_property("Camera2D", PropertyInfo{ "current", VariantType::BOOL }, &Camera2D::set_current, &Camera2D::is_current);
+
+    ClassDB::register_property("Camera2D", PropertyInfo{ "mode", VariantType::INT }, &Camera2D::set_mode, &Camera2D::get_mode);
+    ClassDB::register_property("Camera2D", PropertyInfo{ "smoothing_enabled", VariantType::BOOL }, &Camera2D::set_smoothing_enabled, &Camera2D::is_smoothing_enabled);
+    ClassDB::register_property("Camera2D", PropertyInfo{ "smoothing_speed", VariantType::FLOAT16 }, &Camera2D::set_smoothing_speed, &Camera2D::get_smoothing_speed);
+    ClassDB::register_property("Camera2D", PropertyInfo{ "drag_margin_enabled", VariantType::BOOL }, &Camera2D::set_drag_margin_enabled, &Camera2D::is_drag_margin_enabled);
+    ClassDB::register_property("Camera2D", PropertyInfo{ "drag_margin_left", VariantType::FLOAT16 }, &Camera2D::set_drag_margin_left, &Camera2D::get_drag_margin_left);
+    ClassDB::register_property("Camera2D", PropertyInfo{ "drag_margin_top", VariantType::FLOAT16 }, &Camera2D::set_drag_margin_top, &Camera2D::get_drag_margin_top);
+    ClassDB::register_property("Camera2D", PropertyInfo{ "drag_margin_right", VariantType::FLOAT16 }, &Camera2D::set_drag_margin_right, &Camera2D::get_drag_margin_right);
+    ClassDB::register_property("Camera2D", PropertyInfo{ "drag_margin_bottom", VariantType::FLOAT16 }, &Camera2D::set_drag_margin_bottom, &Camera2D::get_drag_margin_bottom);
+    ClassDB::register_property("Camera2D", PropertyInfo{ "room_width", VariantType::INT }, &Camera2D::set_room_width, &Camera2D::get_room_width);
+    ClassDB::register_property("Camera2D", PropertyInfo{ "room_height", VariantType::INT }, &Camera2D::set_room_height, &Camera2D::get_room_height);
+    ClassDB::register_property("Camera2D", PropertyInfo{ "limit_enabled", VariantType::BOOL }, &Camera2D::set_limit_enabled, &Camera2D::is_limit_enabled);
+    ClassDB::register_property("Camera2D", PropertyInfo{ "limit_left", VariantType::FLOAT16 }, &Camera2D::set_limit_left, &Camera2D::get_limit_left);
+    ClassDB::register_property("Camera2D", PropertyInfo{ "limit_top", VariantType::FLOAT16 }, &Camera2D::set_limit_top, &Camera2D::get_limit_top);
+    ClassDB::register_property("Camera2D", PropertyInfo{ "limit_right", VariantType::FLOAT16 }, &Camera2D::set_limit_right, &Camera2D::get_limit_right);
+    ClassDB::register_property("Camera2D", PropertyInfo{ "limit_bottom", VariantType::FLOAT16 }, &Camera2D::set_limit_bottom, &Camera2D::get_limit_bottom);
 
     RN_REGISTER_CLASS(CPUParticles2D);
+
     ClassDB::register_property("CPUParticles2D", PropertyInfo{ "emitting", VariantType::BOOL }, &CPUParticles2D::set_emitting, &CPUParticles2D::get_emitting);
     ClassDB::register_property("CPUParticles2D", PropertyInfo{ "amount", VariantType::INT }, &CPUParticles2D::set_amount, &CPUParticles2D::get_amount);
     ClassDB::register_property("CPUParticles2D", PropertyInfo{ "lifetime", VariantType::FLOAT16 }, &CPUParticles2D::set_lifetime, &CPUParticles2D::get_lifetime);
@@ -225,19 +244,24 @@ std::string resolve_project_dir(const std::string& input_dir, int argc, char* ar
 
     std::vector<std::string> candidates = {
         input_dir,
-        "./MyRPG",
-        "../MyRPG",
-        "../../MyRPG",
-        "../../../MyRPG"
+        "."
     };
 
     if (argc > 0 && argv[0]) {
         std::error_code ec;
         fs::path exe_dir = fs::path(argv[0]).parent_path();
-        candidates.push_back((exe_dir / "MyRPG").string());
-        candidates.push_back((exe_dir / ".." / "MyRPG").string());
-        candidates.push_back((exe_dir / ".." / ".." / "MyRPG").string());
-        candidates.push_back((exe_dir / ".." / ".." / ".." / "MyRPG").string());
+        candidates.push_back(exe_dir.string());
+    }
+
+    // Search for any immediate subdirectory containing project.rnode
+    std::error_code ec;
+    for (const auto& entry : fs::directory_iterator(".", ec)) {
+        if (entry.is_directory(ec)) {
+            std::string p = entry.path().string();
+            if (fs::exists(p + "/project.rnode")) {
+                candidates.push_back(p);
+            }
+        }
     }
 
     for (const auto& cand : candidates) {
@@ -248,7 +272,7 @@ std::string resolve_project_dir(const std::string& input_dir, int argc, char* ar
         }
     }
 
-    return input_dir.empty() ? "./MyRPG" : input_dir;
+    return input_dir.empty() ? "." : input_dir;
 }
 
 std::string find_game_dll(const std::string& proj_dir) {
@@ -256,9 +280,7 @@ std::string find_game_dll(const std::string& proj_dir) {
         proj_dir + "/bin/Debug",
         proj_dir + "/bin",
         proj_dir + "/bin/Release",
-        "./MyRPG/bin/Debug",
-        "../MyRPG/bin/Debug",
-        "../../MyRPG/bin/Debug",
+        proj_dir,
         "."
     };
 
@@ -291,23 +313,27 @@ std::string find_game_dll(const std::string& proj_dir) {
 }
 
 std::string find_scene_file(const std::string& proj_dir) {
-    std::vector<std::string> candidates = {
-        proj_dir + "/scenes/overworld.rnb",
-        proj_dir + "/scenes/overworld.json",
-        "./MyRPG/scenes/overworld.rnb",
-        "./MyRPG/scenes/overworld.json",
-        "../MyRPG/scenes/overworld.rnb",
-        "../MyRPG/scenes/overworld.json"
+    std::vector<std::string> search_dirs = {
+        proj_dir + "/scenes",
+        proj_dir,
+        "."
     };
 
-    for (const auto& path : candidates) {
-        if (fs::exists(path)) {
-            return path;
+    for (const auto& dir : search_dirs) {
+        std::error_code ec;
+        if (fs::exists(dir, ec) && fs::is_directory(dir, ec)) {
+            for (const auto& entry : fs::directory_iterator(dir, ec)) {
+                std::string ext = entry.path().extension().string();
+                if (ext == ".rnb" || ext == ".json") {
+                    return entry.path().string();
+                }
+            }
         }
     }
 
-    return proj_dir + "/scenes/overworld.json";
+    return proj_dir + "/scenes/main.json";
 }
+
 
 int main(int argc, char* argv[]) {
     std::cout << "==========================================" << std::endl;
@@ -326,22 +352,36 @@ int main(int argc, char* argv[]) {
     register_engine_classes();
 
     bool editor_mode = false;
+    bool project_manager_mode = (argc <= 1);
     std::string specified_dir = "";
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--editor" || arg == "-e") {
             editor_mode = true;
+            project_manager_mode = false;
+        } else if (arg == "--project-manager" || arg == "-pm") {
+            project_manager_mode = true;
         } else if (arg == "--project" && i + 1 < argc) {
             specified_dir = argv[++i];
+            project_manager_mode = false;
         }
     }
+
+    if (project_manager_mode) {
+        editor_mode = true;
+        EditorState::get()->set_project_manager_mode(true);
+    } else {
+        EditorState::get()->set_project_manager_mode(false);
+    }
+
 
     std::string project_dir = resolve_project_dir(specified_dir, argc, argv);
     std::string game_dll_path = find_game_dll(project_dir);
 
     // Parse project.rnode configuration file
-    std::string project_name = "MyRPG";
+    std::string project_name = "RetroNode Project";
+
     std::string configured_main_scene = "";
     int window_width = 1024;
     int window_height = 896;
@@ -383,21 +423,31 @@ int main(int argc, char* argv[]) {
     std::cout << "[RetroNode Engine] Project directory: " << project_dir << std::endl;
     std::cout << "[RetroNode Engine] Game module path:  " << game_dll_path << std::endl;
 
-    TextureServer::get()->set_project_dir(project_dir);
     AudioServer::get()->set_project_dir(project_dir);
     AudioServer::get()->init();
 
-    // Load dynamic game logic module
     GameModuleLoader module_loader(game_dll_path);
-    module_loader.load_module();
+
+    if (!project_manager_mode) {
+        // Load dynamic game logic module
+        module_loader.load_module();
+    }
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         std::cerr << "[RetroNode Engine] Failed to initialize SDL3: " << SDL_GetError() << std::endl;
         return -1;
     }
 
-    std::string window_title = "RetroNode Engine - " + project_name;
-    if (editor_mode) {
+    SDL_SetHint("SDL_RENDER_SCALE_QUALITY", "0");
+    SDL_SetHint("SDL_RENDER_SCALE_QUALITY", "nearest");
+    SDL_SetHint("SDL_TEXTURE_FILTER", "0");
+    SDL_SetHint("SDL_TEXTURE_FILTER", "nearest");
+
+
+
+
+    std::string window_title = project_manager_mode ? "RetroNode Engine — Project Manager" : ("RetroNode Engine - " + project_name);
+    if (editor_mode && !project_manager_mode) {
         window_title += " [Editor Mode]";
     }
 
@@ -426,49 +476,61 @@ int main(int argc, char* argv[]) {
     SDL_SetRenderVSync(renderer, 1);
 
     VisualServer::get()->init(renderer, virtual_width, virtual_height);
+    TextureServer::get()->set_window_icon(window, "assets/logo_128.png");
 
-    // Auto-load texture atlas manifest if present
-    TextureServer::get()->load_atlas_manifest("res://assets/atlas.json");
 
-    // Resolve initial scene path
-    std::string scene_path = "";
-    if (!configured_main_scene.empty()) {
-        std::string resolved_path = configured_main_scene;
-        if (resolved_path.rfind("res://", 0) == 0) {
-            resolved_path = resolved_path.substr(6);
-        }
-        std::string full_path = project_dir + "/" + resolved_path;
-        if (full_path.length() > 5 && full_path.substr(full_path.length() - 5) == ".json") {
-            std::string rnb_path = full_path.substr(0, full_path.length() - 5) + ".rnb";
-            if (fs::exists(rnb_path)) {
-                scene_path = rnb_path;
+    if (!project_manager_mode) {
+        // Auto-load texture atlas manifest if present
+        TextureServer::get()->load_atlas_manifest("res://assets/atlas.json");
+
+        // Resolve initial scene path
+        std::string scene_path = "";
+        if (!configured_main_scene.empty()) {
+            std::string resolved_path = configured_main_scene;
+            if (resolved_path.rfind("res://", 0) == 0) {
+                resolved_path = resolved_path.substr(6);
             }
-        }
-        if (scene_path.empty() && fs::exists(full_path)) {
-            scene_path = full_path;
-        }
-    }
-    if (scene_path.empty()) {
-        scene_path = find_scene_file(project_dir);
-    }
+            std::string full_path = project_dir + "/" + resolved_path;
+            if (full_path.length() > 5 && full_path.substr(full_path.length() - 5) == ".json") {
+                std::string rnb_path = full_path.substr(0, full_path.length() - 5) + ".rnb";
+                std::error_code ec;
+                if (fs::exists(rnb_path, ec) && fs::exists(full_path, ec)) {
+                    auto json_time = fs::last_write_time(full_path, ec);
+                    auto rnb_time = fs::last_write_time(rnb_path, ec);
+                    if (rnb_time >= json_time) {
+                        scene_path = rnb_path;
+                    } else {
+                        scene_path = full_path;
+                    }
+                }
+            }
+            if (scene_path.empty() && fs::exists(full_path)) {
+                scene_path = full_path;
+            }
 
-    module_loader.set_scene_path(scene_path);
+        }
+        if (scene_path.empty()) {
+            scene_path = find_scene_file(project_dir);
+        }
 
-    Node* root_scene = SceneLoader::load_scene_from_file(scene_path);
-    if (root_scene) {
-        SceneTree::get()->set_root(root_scene);
-        std::cout << "[RetroNode Engine] Loaded initial scene: " << scene_path << std::endl;
-    } else {
-        std::cerr << "[RetroNode Engine] Warning: Could not load scene " << scene_path << std::endl;
+        module_loader.set_scene_path(scene_path);
+
+        Node* root_scene = SceneLoader::load_scene_from_file(scene_path);
+        if (root_scene) {
+            SceneTree::get()->set_root(root_scene);
+            std::cout << "[RetroNode Engine] Loaded initial scene: " << scene_path << std::endl;
+        } else {
+            std::cerr << "[RetroNode Engine] Warning: Could not load scene " << scene_path << std::endl;
+        }
     }
 
 #ifdef RN_BUILD_EDITOR
-    if (editor_mode) {
+    if (editor_mode || project_manager_mode) {
         EditorState::get()->set_project_dir(project_dir);
-        EditorState::get()->set_current_scene_path(scene_path);
         EditorMain::get()->init(window, renderer);
     }
 #endif
+
 
     float fps_dt = (target_fps > 0) ? (1.0f / static_cast<float>(target_fps)) : (1.0f / 60.0f);
     const Fixed16 FIXED_DT = Fixed16::from_float(fps_dt);
@@ -489,8 +551,8 @@ int main(int argc, char* argv[]) {
             }
 #ifdef RN_BUILD_EDITOR
             if (editor_mode) {
-                bool handled = EditorMain::get()->process_event(event);
-                if (!handled) {
+                EditorMain::get()->process_event(event);
+                if (EditorState::get()->get_is_play_mode()) {
                     Input::get()->handle_event(event);
                 }
             } else {
@@ -499,6 +561,7 @@ int main(int argc, char* argv[]) {
 #else
             Input::get()->handle_event(event);
 #endif
+
         }
 
         // Check for DLL hot-reloading
@@ -574,9 +637,13 @@ int main(int argc, char* argv[]) {
 #endif
 
     VisualServer::get()->shutdown();
+    AudioServer::get()->shutdown();
+    PhysicsServer2D::get()->clear();
+
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
+
 
     return 0;
 }

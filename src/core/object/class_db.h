@@ -2,7 +2,8 @@
 #define RETRONODE_CLASS_DB_H
 
 #include "object.h"
-#include "../variant.h"
+#include "variant.h"
+
 #include "../string_names.h"
 #include <string>
 #include <functional>

@@ -120,7 +120,36 @@ uint32_t TextureServer::load_texture(const std::string& filepath) {
     return new_id;
 }
 
+void TextureServer::set_window_icon(SDL_Window* window, const std::string& filepath) {
+    if (!window || filepath.empty()) return;
+
+    std::string resolved = filepath;
+    if (resolved.rfind("res://", 0) == 0) {
+        resolved = resolved.substr(6);
+    }
+    std::string final_path = resolved;
+    if (!project_dir.empty() && fs::exists(project_dir + "/" + resolved)) {
+        final_path = project_dir + "/" + resolved;
+    } else if (fs::exists("./" + resolved)) {
+        final_path = "./" + resolved;
+    }
+
+    if (!fs::exists(final_path)) return;
+
+    int width = 0, height = 0, channels = 0;
+    unsigned char* data = stbi_load(final_path.c_str(), &width, &height, &channels, 4);
+    if (!data) return;
+
+    SDL_Surface* surface = SDL_CreateSurfaceFrom(width, height, SDL_PIXELFORMAT_RGBA8888, data, width * 4);
+    if (surface) {
+        SDL_SetWindowIcon(window, surface);
+        SDL_DestroySurface(surface);
+    }
+    stbi_image_free(data);
+}
+
 uint32_t TextureServer::create_procedural_texture(const std::string& name, int width, int height, const uint8_t* rgba_pixels) {
+
     auto it = path_to_id.find(name);
     if (it != path_to_id.end()) {
         return it->second;

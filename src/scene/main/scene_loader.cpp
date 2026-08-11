@@ -132,23 +132,37 @@ static Node *parse_node_internal(const json &j) {
     }
 
     std::string proj_dir = TextureServer::get()->get_project_dir();
-    std::vector<std::string> candidates = {
-        proj_dir + "/" + resolved_path, "./" + resolved_path,
-        "./MyRPG/" + resolved_path, "../MyRPG/" + resolved_path, instance_path};
+    std::vector<std::string> candidates;
+    if (!proj_dir.empty()) {
+      candidates.push_back(proj_dir + "/" + resolved_path);
+    }
+
+    candidates.push_back("./" + resolved_path);
+    candidates.push_back(instance_path);
+
 
     std::string final_path = "";
     for (auto cand : candidates) {
       if (cand.length() > 5 && cand.substr(cand.length() - 5) == ".json") {
         std::string rnb_cand = cand.substr(0, cand.length() - 5) + ".rnb";
-        if (fs::exists(rnb_cand)) {
-          final_path = rnb_cand;
+        std::error_code ec;
+        if (fs::exists(rnb_cand, ec) && fs::exists(cand, ec)) {
+          auto json_time = fs::last_write_time(cand, ec);
+          auto rnb_time = fs::last_write_time(rnb_cand, ec);
+          if (rnb_time >= json_time) {
+            final_path = rnb_cand;
+          } else {
+            final_path = cand;
+          }
           break;
         }
       }
-      if (fs::exists(cand)) {
+      std::error_code ec;
+      if (fs::exists(cand, ec)) {
         final_path = cand;
         break;
       }
+
     }
 
     if (!final_path.empty()) {
@@ -174,22 +188,43 @@ static Node *parse_node_internal(const json &j) {
 
   std::string type_name = j.value("type", "Node");
   std::string script_name = j.value("script", "");
-
   std::string create_type = script_name.empty() ? type_name : script_name;
 
   Object *obj = ClassDB::get()->instantiate(StringName(create_type));
   if (!obj && !script_name.empty()) {
-    std::cout << "[SceneLoader] ClassDB fallback to base type '" << type_name
-              << "' for script '" << script_name << "'" << std::endl;
+    obj = ClassDB::get()->instantiate(StringName(type_name));
+  }
+
+  if (!obj && type_name != "Node") {
+    // Attempt fallback by registered class name
     obj = ClassDB::get()->instantiate(StringName(type_name));
   }
 
   Node *node = dynamic_cast<Node *>(obj);
   if (!node) {
-    std::cerr << "[SceneLoader] Failed to create node of type '" << create_type
-              << "', creating default Node" << std::endl;
-    node = new Node();
+    // Intelligent heuristic fallback for custom script nodes (e.g. PlayerController -> CharacterBody2D)
+    std::string lower_type = create_type;
+    for (char &c : lower_type) c = static_cast<char>(::tolower(c));
+
+    if (lower_type.find("character") != std::string::npos || lower_type.find("player") != std::string::npos || lower_type.find("body") != std::string::npos) {
+      node = new CharacterBody2D();
+      std::cout << "[SceneLoader] ClassDB fallback: Instantiated CharacterBody2D for '" << create_type << "'" << std::endl;
+    } else if (lower_type.find("sprite") != std::string::npos) {
+      node = new Sprite2D();
+      std::cout << "[SceneLoader] ClassDB fallback: Instantiated Sprite2D for '" << create_type << "'" << std::endl;
+    } else if (j.contains("properties") && (j["properties"].contains("position") || j["properties"].contains("rotation"))) {
+      node = new Node2D();
+      std::cout << "[SceneLoader] ClassDB fallback: Instantiated Node2D for '" << create_type << "'" << std::endl;
+    } else {
+      std::cerr << "[SceneLoader] Warning: Unknown node type '" << create_type << "', creating default Node" << std::endl;
+      node = new Node();
+    }
   }
+
+  if (node && (create_type != node->get_class_name().as_string())) {
+    node->set_script_path(create_type);
+  }
+
 
   if (j.contains("name")) {
     node->set_name(j["name"]);
@@ -652,8 +687,18 @@ bool SceneLoader::save_scene_to_file(const Node* node, const std::string& filepa
     }
     file << content;
     file.close();
+
+    if (filepath.length() > 5 && filepath.substr(filepath.length() - 5) == ".json") {
+        std::string rnb_path = filepath.substr(0, filepath.length() - 5) + ".rnb";
+        std::error_code ec;
+        if (fs::exists(rnb_path, ec)) {
+            fs::remove(rnb_path, ec);
+        }
+    }
+
     std::cout << "[SceneLoader] Saved scene to: " << filepath << std::endl;
     return true;
 }
+
 
 } // namespace RetroNode

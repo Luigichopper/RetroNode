@@ -1,5 +1,6 @@
 #include "editor_main.h"
 #include "editor_state.h"
+#include "project_manager.h"
 #include "panels/main_menu_bar.h"
 #include "panels/scene_tree_panel.h"
 #include "panels/inspector_panel.h"
@@ -8,6 +9,8 @@
 #include "panels/game_view_panel.h"
 #include "panels/tilemap_panel.h"
 #include "../servers/visual_server.h"
+#include "../servers/input.h"
+
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -23,8 +26,10 @@ EditorMain::~EditorMain() {
 }
 
 bool EditorMain::init(SDL_Window* p_window, SDL_Renderer* p_renderer) {
+    if (initialized) return true;
     window = p_window;
     renderer = p_renderer;
+
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -67,16 +72,15 @@ bool EditorMain::process_event(const SDL_Event& event) {
     if (!initialized) return false;
     ImGui_ImplSDL3_ProcessEvent(&event);
 
-    ImGuiIO& io = ImGui::GetIO();
     bool is_play_mode = EditorState::get()->get_is_play_mode();
-    bool is_game_view = EditorState::get()->is_game_view_active();
 
-    // Event routing condition: gating gameplay input
-    if (is_play_mode && is_game_view && !io.WantCaptureKeyboard && !io.WantCaptureMouse) {
-        return false; // Forward event to gameplay
+
+    if (is_play_mode) {
+        Input::get()->handle_event(event);
     }
     return true;
 }
+
 
 void EditorMain::render_frame(float alpha) {
     if (!initialized || !renderer) return;
@@ -92,34 +96,38 @@ void EditorMain::render_frame(float alpha) {
     ImGuiIO& io = ImGui::GetIO();
     io.FontGlobalScale = EditorState::get()->get_ui_scale();
 
-    // Global Editor Keyboard Shortcuts
-    if (io.KeyCtrl && !io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_S)) {
-        EditorState::get()->save_current_scene();
-    } else if (io.KeyCtrl && !io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z)) {
-        EditorState::get()->undo();
-    } else if (io.KeyCtrl && (ImGui::IsKeyPressed(ImGuiKey_Y) || (io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z)))) {
-        EditorState::get()->redo();
+    if (EditorState::get()->get_is_project_manager_mode()) {
+        ProjectManager::get()->draw_ui(window, renderer);
+    } else {
+        // Global Editor Keyboard Shortcuts
+        if (io.KeyCtrl && !io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_S)) {
+            EditorState::get()->save_current_scene();
+        } else if (io.KeyCtrl && !io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z)) {
+            EditorState::get()->undo();
+        } else if (io.KeyCtrl && (ImGui::IsKeyPressed(ImGuiKey_Y) || (io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z)))) {
+            EditorState::get()->redo();
+        }
+
+        if (io.KeyCtrl && (ImGui::IsKeyPressed(ImGuiKey_Equal) || ImGui::IsKeyPressed(ImGuiKey_KeypadAdd))) {
+            EditorState::get()->set_ui_scale(EditorState::get()->get_ui_scale() + 0.15f);
+        } else if (io.KeyCtrl && (ImGui::IsKeyPressed(ImGuiKey_Minus) || ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract))) {
+            EditorState::get()->set_ui_scale(EditorState::get()->get_ui_scale() - 0.15f);
+        }
+
+        // Establish DockSpace over main viewport
+        ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
+
+        // Render Docks & Menu Bar
+        MainMenuBar::draw();
+        SceneTreePanel::draw();
+        InspectorPanel::draw();
+        FileSystemPanel::draw();
+        ViewportPanel::draw();
+        GameViewPanel::draw();
+        TilemapPanel::draw();
     }
 
-    if (io.KeyCtrl && (ImGui::IsKeyPressed(ImGuiKey_Equal) || ImGui::IsKeyPressed(ImGuiKey_KeypadAdd))) {
-        EditorState::get()->set_ui_scale(EditorState::get()->get_ui_scale() + 0.15f);
-    } else if (io.KeyCtrl && (ImGui::IsKeyPressed(ImGuiKey_Minus) || ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract))) {
-        EditorState::get()->set_ui_scale(EditorState::get()->get_ui_scale() - 0.15f);
-    }
-
-    // 3. Establish DockSpace over main viewport
-    ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
-
-    // 4. Render Docks & Menu Bar
-    MainMenuBar::draw();
-    SceneTreePanel::draw();
-    InspectorPanel::draw();
-    FileSystemPanel::draw();
-    ViewportPanel::draw();
-    GameViewPanel::draw();
-    TilemapPanel::draw();
-
-    // 5. Render ImGui Draw Commands to Window Screen
+    // 3. Render ImGui Draw Commands to Window Screen
     ImGui::Render();
 
     SDL_SetRenderTarget(renderer, NULL);
@@ -131,6 +139,7 @@ void EditorMain::render_frame(float alpha) {
 }
 
 void EditorMain::shutdown() {
+
     if (!initialized) return;
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();

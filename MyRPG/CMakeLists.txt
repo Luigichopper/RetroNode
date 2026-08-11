@@ -23,3 +23,15 @@ set_target_properties(game PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin"
     PREFIX ""
 )
+
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if (Python3_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../tools/texture_packer.py")
+    add_custom_target(compile_game_assets ALL
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../tools/texture_packer.py ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../tools/map_compiler.py ${CMAKE_CURRENT_SOURCE_DIR}/scenes/player.json ${CMAKE_CURRENT_SOURCE_DIR}/scenes/player.rnb
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../tools/map_compiler.py ${CMAKE_CURRENT_SOURCE_DIR}/scenes/overworld.json ${CMAKE_CURRENT_SOURCE_DIR}/scenes/overworld.rnb
+        COMMENT "Auto-compiling sprite atlases and binary maps for ${PROJECT_NAME}..."
+    )
+    add_dependencies(game compile_game_assets)
+endif()
+

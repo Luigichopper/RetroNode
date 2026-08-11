@@ -64,5 +64,7 @@
             "y": 1.0
         }
     },
-    "type": "PlayerController"
+    "type": "CharacterBody2D",
+    "script": "PlayerController"
 }
+

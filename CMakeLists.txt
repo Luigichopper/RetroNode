@@ -88,8 +88,6 @@ set(ENGINE_CORE_SOURCES
     src/core/object/object.cpp
     src/core/object/object_db.cpp
     src/core/object/class_db.cpp
-    src/core/undo_redo.cpp
-    src/core/resource_manager.cpp
     src/core/resource/gradient.cpp
     src/core/resource/curve.cpp
     src/core/math/perlin_noise.cpp
@@ -125,6 +123,7 @@ if (RN_BUILD_EDITOR)
     list(APPEND ENGINE_CORE_SOURCES
         src/editor/editor_state.cpp
         src/editor/editor_main.cpp
+        src/editor/project_manager.cpp
         src/editor/panels/main_menu_bar.cpp
         src/editor/panels/scene_tree_panel.cpp
         src/editor/panels/inspector_panel.cpp
@@ -135,6 +134,7 @@ if (RN_BUILD_EDITOR)
         src/editor/panels/tilemap_panel.cpp
     )
 endif()
+
 
 add_library(retronode_core SHARED ${ENGINE_CORE_SOURCES})
 
@@ -168,34 +168,56 @@ else()
 endif()
 
 set_target_properties(retronode_core PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/Debug"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/Release"
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/Debug"
+    LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/Release"
+    ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/Debug"
+    ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/Release"
 )
 
-# Automated Asset Compilation Target (runs texture_packer & map_compiler)
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
-if (Python3_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/MyRPG")
-    add_custom_target(compile_game_assets ALL
-        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tools/texture_packer.py ${CMAKE_CURRENT_SOURCE_DIR}/MyRPG
-        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tools/map_compiler.py ${CMAKE_CURRENT_SOURCE_DIR}/MyRPG/scenes/player.json ${CMAKE_CURRENT_SOURCE_DIR}/MyRPG/scenes/player.rnb
-        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tools/map_compiler.py ${CMAKE_CURRENT_SOURCE_DIR}/MyRPG/scenes/overworld.json ${CMAKE_CURRENT_SOURCE_DIR}/MyRPG/scenes/overworld.rnb
-        COMMENT "Auto-compiling sprite atlases and binary maps..."
+# Engine Main Executable
+set(RETRONODE_MAIN_SOURCES src/platform/main.cpp)
+if (WIN32)
+    list(APPEND RETRONODE_MAIN_SOURCES src/platform/win32/retronode.rc)
+elseif (APPLE)
+    # macOS Bundle App Icon support
+    set(MACOSX_BUNDLE_ICON_FILE "icon.icns")
+    set_source_files_properties(assets/branding/icon.icns PROPERTIES HEADER_FILE_ONLY ON LOCATION "Resources")
+    list(APPEND RETRONODE_MAIN_SOURCES assets/branding/icon.icns)
+endif()
+
+add_executable(retronode ${RETRONODE_MAIN_SOURCES})
+target_link_libraries(retronode PRIVATE retronode_core)
+
+set_target_properties(retronode PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/Debug"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/Release"
+)
+
+if (APPLE)
+    set_target_properties(retronode PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_ICON_FILE "icon.icns"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "org.retronode.engine"
+        MACOSX_BUNDLE_BUNDLE_NAME "RetroNode Engine"
     )
 endif()
 
-# Engine Main Executable
-add_executable(retronode src/platform/main.cpp)
-target_link_libraries(retronode PRIVATE retronode_core)
 
-if (TARGET compile_game_assets)
-    add_dependencies(retronode compile_game_assets)
+
+
+# Game Subprojects Discovery (game-agnostic)
+set(RN_GAME_DIR "" CACHE PATH "Path to external game project directory")
+if (RN_GAME_DIR AND EXISTS "${RN_GAME_DIR}/CMakeLists.txt")
+    add_subdirectory("${RN_GAME_DIR}")
+else()
+    file(GLOB GAME_PROJECT_CMAKES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} */CMakeLists.txt)
+    foreach(GAME_CMAKE ${GAME_PROJECT_CMAKES})
+        get_filename_component(GAME_DIR ${GAME_CMAKE} DIRECTORY)
+        if (NOT GAME_DIR STREQUAL "src" AND NOT GAME_DIR STREQUAL "tools" AND NOT GAME_DIR STREQUAL "build")
+            add_subdirectory(${GAME_DIR})
+        endif()
+    endforeach()
 endif()
 
-set_target_properties(retronode PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
-)
-
-if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/MyRPG/CMakeLists.txt")
-    add_subdirectory(MyRPG)
-endif()

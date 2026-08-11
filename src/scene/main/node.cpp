@@ -17,22 +17,31 @@ Node::~Node() {
 void Node::get_property_list(std::vector<PropertyInfo>& out_list) const {
     Object::get_property_list(out_list);
     out_list.push_back({ StringName("name"), VariantType::STRING });
+    out_list.push_back({ StringName("script_path"), VariantType::STRING });
 }
 
 Variant Node::get(const StringName& p_name) const {
     static const StringName s_name("name");
+    static const StringName s_script_path("script_path");
     if (p_name == s_name) return Variant(name);
+    if (p_name == s_script_path) return Variant(script_path);
     return Object::get(p_name);
 }
 
 bool Node::set(const StringName& p_name, const Variant& p_value) {
     static const StringName s_name("name");
+    static const StringName s_script_path("script_path");
     if (p_name == s_name) {
         set_name(p_value.as_string());
         return true;
     }
+    if (p_name == s_script_path) {
+        set_script_path(p_value.as_string());
+        return true;
+    }
     return Object::set(p_name, p_value);
 }
+
 
 Node* Node::duplicate() const {
     StringName cls_name = get_class_name();
@@ -53,6 +62,9 @@ Node* Node::duplicate() const {
     }
 
     new_node->set_visible(is_visible());
+    new_node->set_script_path(script_path);
+    new_node->set_scene_instance_path(scene_instance_path);
+
 
     // 2. Recursively duplicate child nodes
     for (const Node* child : children) {

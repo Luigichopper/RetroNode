@@ -77,6 +77,7 @@ public:
     void render(float alpha);
 
     SDL_Texture* get_framebuffer_texture() const { return virtual_framebuffer; }
+    SDL_Texture* get_scaled_game_framebuffer(int width, int height);
     SDL_Texture* get_editor_framebuffer_texture(int width, int height);
     void render_editor_scene(float alpha, int width, int height, const Vector2Fixed& cam_pan, float cam_zoom);
     SDL_Renderer* get_renderer() const { return renderer; }
@@ -87,7 +88,15 @@ private:
     SDL_Texture* editor_framebuffer = nullptr;
     int editor_width = 0;
     int editor_height = 0;
+
+    SDL_Texture* scaled_game_framebuffer = nullptr;
+    int scaled_game_width = 0;
+    int scaled_game_height = 0;
+
+
+    void draw_quad_internal(const DrawCommand& cmd, const SDL_FRect& dst_rect);
 };
+
 
 } // namespace RetroNode
 

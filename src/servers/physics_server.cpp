@@ -1,5 +1,6 @@
 #include "physics_server.h"
 #include "../scene/2d/node_2d.h"
+#include "../core/object/object_db.h"
 #include <algorithm>
 #include <cmath>
 
@@ -38,17 +39,63 @@ void PhysicsServer2D::add_static_box(uint64_t id, const Rect2Fixed& bounds) {
 }
 
 void PhysicsServer2D::register_active_body(uint64_t id, Node2D* node, const Rect2Fixed& bounds) {
+
+    unregister_active_body(id);
     active_bodies[id] = ActiveBodyInfo{id, node, bounds};
+
+    Fixed16 epsilon = Fixed16::from_raw(1);
+    Fixed16 x1 = bounds.position.x;
+    Fixed16 y1 = bounds.position.y;
+    Fixed16 x2 = bounds.position.x + bounds.size.x - epsilon;
+    Fixed16 y2 = bounds.position.y + bounds.size.y - epsilon;
+
+    int min_gx = to_cell(x1, CELL_SIZE);
+    int max_gx = to_cell(x2, CELL_SIZE);
+    int min_gy = to_cell(y1, CELL_SIZE);
+    int max_gy = to_cell(y2, CELL_SIZE);
+
+    for (int gx = min_gx; gx <= max_gx; ++gx) {
+        for (int gy = min_gy; gy <= max_gy; ++gy) {
+            uint64_t key = get_cell_key(gx, gy);
+            active_spatial_grid[key].push_back(id);
+        }
+    }
 }
 
 void PhysicsServer2D::unregister_active_body(uint64_t id) {
-    active_bodies.erase(id);
+    auto it = active_bodies.find(id);
+    if (it != active_bodies.end()) {
+        const Rect2Fixed& bounds = it->second.bounds;
+        Fixed16 epsilon = Fixed16::from_raw(1);
+        Fixed16 x1 = bounds.position.x;
+        Fixed16 y1 = bounds.position.y;
+        Fixed16 x2 = bounds.position.x + bounds.size.x - epsilon;
+        Fixed16 y2 = bounds.position.y + bounds.size.y - epsilon;
+
+        int min_gx = to_cell(x1, CELL_SIZE);
+        int max_gx = to_cell(x2, CELL_SIZE);
+        int min_gy = to_cell(y1, CELL_SIZE);
+        int max_gy = to_cell(y2, CELL_SIZE);
+
+        for (int gx = min_gx; gx <= max_gx; ++gx) {
+            for (int gy = min_gy; gy <= max_gy; ++gy) {
+                uint64_t key = get_cell_key(gx, gy);
+                auto cell_it = active_spatial_grid.find(key);
+                if (cell_it != active_spatial_grid.end()) {
+                    auto& vec = cell_it->second;
+                    vec.erase(std::remove(vec.begin(), vec.end(), id), vec.end());
+                }
+            }
+        }
+        active_bodies.erase(it);
+    }
 }
 
 void PhysicsServer2D::clear() {
     static_bodies.clear();
     active_bodies.clear();
     spatial_grid.clear();
+    active_spatial_grid.clear();
 }
 
 std::vector<size_t> PhysicsServer2D::get_nearby_body_indices(const Rect2Fixed& bounds) const {
@@ -84,15 +131,45 @@ std::vector<size_t> PhysicsServer2D::get_nearby_body_indices(const Rect2Fixed& b
 
 std::vector<Node2D*> PhysicsServer2D::get_overlapping_bodies_for_box(const Rect2Fixed& bounds, Node2D* self) const {
     std::vector<Node2D*> result;
-    for (const auto& pair : active_bodies) {
-        const auto& info = pair.second;
+    Fixed16 epsilon = Fixed16::from_raw(1);
+    Fixed16 x1 = bounds.position.x;
+    Fixed16 y1 = bounds.position.y;
+    Fixed16 x2 = bounds.position.x + bounds.size.x - epsilon;
+    Fixed16 y2 = bounds.position.y + bounds.size.y - epsilon;
+
+    int min_gx = to_cell(x1, CELL_SIZE);
+    int max_gx = to_cell(x2, CELL_SIZE);
+    int min_gy = to_cell(y1, CELL_SIZE);
+    int max_gy = to_cell(y2, CELL_SIZE);
+
+    std::vector<uint64_t> candidate_ids;
+    for (int gx = min_gx; gx <= max_gx; ++gx) {
+        for (int gy = min_gy; gy <= max_gy; ++gy) {
+            uint64_t key = get_cell_key(gx, gy);
+            auto cell_it = active_spatial_grid.find(key);
+            if (cell_it != active_spatial_grid.end()) {
+                for (uint64_t id : cell_it->second) {
+                    if (std::find(candidate_ids.begin(), candidate_ids.end(), id) == candidate_ids.end()) {
+                        candidate_ids.push_back(id);
+                    }
+                }
+            }
+        }
+    }
+
+    for (uint64_t id : candidate_ids) {
+        auto it = active_bodies.find(id);
+        if (it == active_bodies.end()) continue;
+        const auto& info = it->second;
         if (!info.node || info.node == self) continue;
+        if (!ObjectDB::get()->is_valid(info.id)) continue;
         if (bounds.intersects(info.bounds)) {
             result.push_back(info.node);
         }
     }
     return result;
 }
+
 
 KinematicCollision2D PhysicsServer2D::move_and_slide(uint64_t body_id, Vector2Fixed position, Vector2Fixed size, Vector2Fixed velocity, Fixed16 delta) {
     (void)body_id;

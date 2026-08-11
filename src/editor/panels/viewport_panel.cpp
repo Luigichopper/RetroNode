@@ -1,12 +1,18 @@
 #include "viewport_panel.h"
+#include "tilemap_panel.h"
 #include "../editor_state.h"
 #include "../../servers/visual_server.h"
 #include "../../scene/2d/node_2d.h"
 #include "../../scene/2d/sprite_2d.h"
+#include "../../scene/2d/tile_map_layer.h"
+#include "../../scene/2d/camera_2d.h"
 #include "../../scene/gui/control.h"
+
 #include <imgui.h>
 #include <cmath>
+#include <algorithm>
 #include <iostream>
+
 
 namespace RetroNode {
 
@@ -183,6 +189,46 @@ void ViewportPanel::draw() {
                             IM_COL32(60, 140, 255, 255)
                         );
 
+                        // Camera2D Viewport & Deadzone Gizmo Overlay
+                        Camera2D* cam_node = dynamic_cast<Camera2D*>(cur_n2d);
+                        if (cam_node) {
+                            int v_w = VisualServer::get()->get_virtual_width();
+                            int v_h = VisualServer::get()->get_virtual_height();
+
+                            Vector2Fixed cam_pos = cam_node->get_global_position();
+                            float cam_x = center_pos.x + (cam_pos.x.to_float() - v_w * 0.5f - camera.pan.x.to_float()) * camera.zoom;
+                            float cam_y = center_pos.y + (cam_pos.y.to_float() - v_h * 0.5f - camera.pan.y.to_float()) * camera.zoom;
+                            float cam_w = v_w * camera.zoom;
+                            float cam_h = v_h * camera.zoom;
+
+                            // 1. Blue Camera Viewport Frame
+                            draw_list->AddRect(ImVec2(cam_x, cam_y), ImVec2(cam_x + cam_w, cam_y + cam_h), IM_COL32(0, 180, 255, 255), 0.0f, 0, 2.0f);
+                            draw_list->AddText(ImVec2(cam_x + 6.0f, cam_y + 6.0f), IM_COL32(0, 220, 255, 255), "📷 Camera2D Viewport (256x224)");
+
+                            // 2. Drag Margin Deadzone Box (Yellow Dashed Outline)
+                            if (cam_node->drag_margin_enabled) {
+                                float dm_l = cam_x + cam_w * cam_node->drag_margin_left;
+                                float dm_r = cam_x + cam_w * (1.0f - cam_node->drag_margin_right);
+                                float dm_t = cam_y + cam_h * cam_node->drag_margin_top;
+                                float dm_b = cam_y + cam_h * (1.0f - cam_node->drag_margin_bottom);
+
+                                draw_list->AddRect(ImVec2(dm_l, dm_t), ImVec2(dm_r, dm_b), IM_COL32(255, 220, 0, 200), 0.0f, 0, 1.5f);
+                                draw_list->AddText(ImVec2(dm_l + 4.0f, dm_t + 4.0f), IM_COL32(255, 220, 0, 200), "Deadzone");
+                            }
+
+                            // 3. Camera Limits Box (Red Outline)
+                            if (cam_node->limit_enabled) {
+                                float lim_l = center_pos.x + (cam_node->limit_left - camera.pan.x.to_float()) * camera.zoom;
+                                float lim_t = center_pos.y + (cam_node->limit_top - camera.pan.y.to_float()) * camera.zoom;
+                                float lim_r = center_pos.x + (cam_node->limit_right - camera.pan.x.to_float()) * camera.zoom;
+                                float lim_b = center_pos.y + (cam_node->limit_bottom - camera.pan.y.to_float()) * camera.zoom;
+
+                                draw_list->AddRect(ImVec2(lim_l, lim_t), ImVec2(lim_r, lim_b), IM_COL32(255, 50, 50, 220), 0.0f, 0, 2.0f);
+                                draw_list->AddText(ImVec2(lim_l + 6.0f, lim_t + 6.0f), IM_COL32(255, 60, 60, 220), "Camera Limits");
+                            }
+                        }
+
+
                         // Gizmo Drag Interaction
                         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && is_hovered) {
                             ImVec2 mouse_pos = io.MousePos;
@@ -268,7 +314,99 @@ void ViewportPanel::draw() {
                             active_gizmo_axis = GizmoAxis::NONE;
                         }
                     }
+
+                    // Interactive Tilemap Painter Viewport Overlays & Painting Input
+                    TileMapLayer* cur_tilemap = dynamic_cast<TileMapLayer*>(cur_selected);
+                    if (cur_tilemap) {
+                        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+                        ImVec2 center_pos = ImVec2(v_origin.x + avail.x * 0.5f, v_origin.y + scene_view_h * 0.5f);
+                        Vector2Fixed t_global_pos = cur_tilemap->get_global_position();
+
+                        int cols = cur_tilemap->columns;
+                        int rows = cur_tilemap->rows;
+                        int tile_sz = cur_tilemap->tile_size;
+
+                        // 1. Grid Overlay
+                        if (TilemapPanel::show_grid_overlay) {
+                            for (int r = 0; r <= rows; ++r) {
+                                float y_world = t_global_pos.y.to_float() + r * tile_sz;
+                                float y_screen = center_pos.y + (y_world - camera.pan.y.to_float()) * camera.zoom;
+                                float x_start = center_pos.x + (t_global_pos.x.to_float() - camera.pan.x.to_float()) * camera.zoom;
+                                float x_end = center_pos.x + (t_global_pos.x.to_float() + cols * tile_sz - camera.pan.x.to_float()) * camera.zoom;
+                                draw_list->AddLine(ImVec2(x_start, y_screen), ImVec2(x_end, y_screen), IM_COL32(0, 220, 255, 100), 1.0f);
+                            }
+                            for (int c = 0; c <= cols; ++c) {
+                                float x_world = t_global_pos.x.to_float() + c * tile_sz;
+                                float x_screen = center_pos.x + (x_world - camera.pan.x.to_float()) * camera.zoom;
+                                float y_start = center_pos.y + (t_global_pos.y.to_float() - camera.pan.y.to_float()) * camera.zoom;
+                                float y_end = center_pos.y + (t_global_pos.y.to_float() + rows * tile_sz - camera.pan.y.to_float()) * camera.zoom;
+                                draw_list->AddLine(ImVec2(x_screen, y_start), ImVec2(x_screen, y_end), IM_COL32(0, 220, 255, 100), 1.0f);
+                            }
+                        }
+
+                        // 2. Collision Overlay
+                        if (TilemapPanel::show_collision_overlay) {
+                            for (int r = 0; r < rows; ++r) {
+                                for (int c = 0; c < cols; ++c) {
+                                    if (cur_tilemap->is_cell_solid(c, r)) {
+                                        float cell_x = center_pos.x + (t_global_pos.x.to_float() + c * tile_sz - camera.pan.x.to_float()) * camera.zoom;
+                                        float cell_y = center_pos.y + (t_global_pos.y.to_float() + r * tile_sz - camera.pan.y.to_float()) * camera.zoom;
+                                        float cell_w = tile_sz * camera.zoom;
+                                        float cell_h = tile_sz * camera.zoom;
+                                        draw_list->AddRectFilled(ImVec2(cell_x, cell_y), ImVec2(cell_x + cell_w, cell_y + cell_h), IM_COL32(255, 40, 40, 90));
+                                        draw_list->AddRect(ImVec2(cell_x, cell_y), ImVec2(cell_x + cell_w, cell_y + cell_h), IM_COL32(255, 60, 60, 180), 0.0f, 0, 1.0f);
+                                    }
+                                }
+                            }
+                        }
+
+                        // 3. Hover Preview & Interactive Painting
+                        ImVec2 mouse_pos = io.MousePos;
+                        float world_m_x = camera.pan.x.to_float() + (mouse_pos.x - center_pos.x) / camera.zoom;
+                        float world_m_y = camera.pan.y.to_float() + (mouse_pos.y - center_pos.y) / camera.zoom;
+
+                        int cell_c = static_cast<int>(std::floor((world_m_x - t_global_pos.x.to_float()) / tile_sz));
+                        int cell_r = static_cast<int>(std::floor((world_m_y - t_global_pos.y.to_float()) / tile_sz));
+
+                        if (cell_c >= 0 && cell_c < cols && cell_r >= 0 && cell_r < rows) {
+                            float h_x = center_pos.x + (t_global_pos.x.to_float() + cell_c * tile_sz - camera.pan.x.to_float()) * camera.zoom;
+                            float h_y = center_pos.y + (t_global_pos.y.to_float() + cell_r * tile_sz - camera.pan.y.to_float()) * camera.zoom;
+                            float h_w = tile_sz * camera.zoom;
+                            float h_h = tile_sz * camera.zoom;
+
+                            draw_list->AddRect(ImVec2(h_x, h_y), ImVec2(h_x + h_w, h_y + h_h), IM_COL32(255, 230, 0, 255), 0.0f, 0, 2.0f);
+
+                            if (is_hovered && active_gizmo_axis == GizmoAxis::NONE && !io.KeyCtrl && !io.KeyAlt) {
+                                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                                    EditorState::get()->push_undo_snapshot();
+                                    if (TilemapPanel::current_tool == TileTool::BUCKET_FILL) {
+                                        TilemapPanel::perform_flood_fill(cur_tilemap, cell_c, cell_r, TilemapPanel::active_tile_index, TilemapPanel::paint_solid, TilemapPanel::active_metadata);
+                                    } else if (TilemapPanel::current_tool == TileTool::RECT_FILL) {
+                                        TilemapPanel::rect_start_col = cell_c;
+                                        TilemapPanel::rect_start_row = cell_r;
+                                        TilemapPanel::is_rect_drag = true;
+                                    }
+                                }
+
+                                if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+                                    if (TilemapPanel::current_tool == TileTool::PENCIL) {
+                                        cur_tilemap->set_cell(cell_c, cell_r, TilemapPanel::active_tile_index, TilemapPanel::paint_solid, TilemapPanel::active_metadata);
+                                    } else if (TilemapPanel::current_tool == TileTool::ERASER) {
+                                        cur_tilemap->set_cell(cell_c, cell_r, -1, false, 0);
+                                    } else if (TilemapPanel::current_tool == TileTool::COLLISION_TOGGLE) {
+                                        cur_tilemap->set_cell(cell_c, cell_r, cur_tilemap->get_cell(cell_c, cell_r), TilemapPanel::paint_solid, cur_tilemap->get_cell_metadata(cell_c, cell_r));
+                                    }
+                                }
+
+                                if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && TilemapPanel::is_rect_drag) {
+                                    TilemapPanel::perform_rect_fill(cur_tilemap, TilemapPanel::rect_start_col, TilemapPanel::rect_start_row, cell_c, cell_r, TilemapPanel::active_tile_index, TilemapPanel::paint_solid, TilemapPanel::active_metadata);
+                                    TilemapPanel::is_rect_drag = false;
+                                }
+                            }
+                        }
+                    }
                 }
+
                 ImGui::EndTabItem();
             }
 

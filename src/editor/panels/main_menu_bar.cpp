@@ -1,7 +1,9 @@
 #include "main_menu_bar.h"
 #include "project_settings_window.h"
 #include "../editor_state.h"
+#include "../../servers/texture_server.h"
 #include <imgui.h>
+
 
 namespace RetroNode {
 
@@ -87,14 +89,25 @@ void MainMenuBar::draw() {
             }
         }
 
-        // Status text on far right
-        const std::string& status = EditorState::get()->get_status_message();
-        float status_w = ImGui::CalcTextSize(status.c_str()).x;
-        ImGui::SameLine(bar_width - status_w - 20.0f);
-        ImGui::TextDisabled("%s", status.c_str());
+        // Status text and App Branding Logo on far right
+        uint32_t logo_tex_id = TextureServer::get()->load_texture("assets/logo_128.png");
+        SDL_Texture* logo_tex = TextureServer::get()->get_texture(logo_tex_id);
+        if (logo_tex) {
+            SDL_SetTextureScaleMode(logo_tex, SDL_SCALEMODE_NEAREST);
+            ImGui::SameLine(bar_width - 130.0f);
+            ImGui::Image((ImTextureID)(intptr_t)logo_tex, ImVec2(18.0f, 18.0f));
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(0.3f, 0.75f, 1.0f, 1.0f), "RetroNode");
+        } else {
+            const std::string& status = EditorState::get()->get_status_message();
+            float status_w = ImGui::CalcTextSize(status.c_str()).x;
+            ImGui::SameLine(bar_width - status_w - 20.0f);
+            ImGui::TextDisabled("%s", status.c_str());
+        }
 
         ImGui::EndMainMenuBar();
     }
+
 
     ProjectSettingsWindow::draw();
 }

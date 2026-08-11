@@ -36,10 +36,12 @@ private:
     bool is_undoing_redoing = false;
 
     // Main Scene & Play Mode Editing State
-    std::string main_scene_path = "res://scenes/overworld.json";
+    std::string main_scene_path = "";
     std::string editing_scene_before_play;
 
-    std::string project_dir = "./MyRPG";
+    std::string project_dir = "";
+
+    bool is_project_manager_mode = true;
     std::string current_scene_path;
     std::vector<std::string> open_scenes;
     std::string selected_node_path_snapshot;
@@ -53,6 +55,13 @@ public:
         }
         return instance;
     }
+
+    bool get_is_project_manager_mode() const { return is_project_manager_mode; }
+    void set_project_manager_mode(bool active) { is_project_manager_mode = active; }
+
+    void load_project_and_launch(const std::string& proj_path);
+    void run_project_standalone(const std::string& proj_path);
+
 
     uint64_t get_selected_instance_id() const { return selected_instance_id; }
     void set_selected_instance_id(uint64_t id) { selected_instance_id = id; }

@@ -57,7 +57,41 @@ void VisualServer::shutdown() {
         SDL_DestroyTexture(editor_framebuffer);
         editor_framebuffer = nullptr;
     }
+    if (scaled_game_framebuffer) {
+        SDL_DestroyTexture(scaled_game_framebuffer);
+        scaled_game_framebuffer = nullptr;
+    }
 }
+
+SDL_Texture* VisualServer::get_scaled_game_framebuffer(int width, int height) {
+    if (!renderer || width <= 0 || height <= 0 || !virtual_framebuffer) return virtual_framebuffer;
+
+    if (!scaled_game_framebuffer || scaled_game_width != width || scaled_game_height != height) {
+        if (scaled_game_framebuffer) {
+            SDL_DestroyTexture(scaled_game_framebuffer);
+        }
+        scaled_game_framebuffer = SDL_CreateTexture(
+            renderer,
+            SDL_PIXELFORMAT_RGBA8888,
+            SDL_TEXTUREACCESS_TARGET,
+            width,
+            height
+        );
+        scaled_game_width = width;
+        scaled_game_height = height;
+        if (scaled_game_framebuffer) {
+            SDL_SetTextureScaleMode(scaled_game_framebuffer, SDL_SCALEMODE_NEAREST);
+        }
+    }
+
+    if (scaled_game_framebuffer) {
+        SDL_SetRenderTarget(renderer, scaled_game_framebuffer);
+        SDL_SetTextureScaleMode(virtual_framebuffer, SDL_SCALEMODE_NEAREST);
+        SDL_RenderTexture(renderer, virtual_framebuffer, NULL, NULL);
+    }
+    return scaled_game_framebuffer;
+}
+
 
 void VisualServer::submit_draw_sprite(
     const Vector2Fixed& pos,
@@ -122,6 +156,31 @@ SDL_Texture* VisualServer::get_editor_framebuffer_texture(int width, int height)
     return editor_framebuffer;
 }
 
+void VisualServer::draw_quad_internal(const DrawCommand& cmd, const SDL_FRect& dst_rect) {
+    SDL_Texture* tex = TextureServer::get()->get_texture(cmd.texture_id);
+    if (tex) {
+        SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_NEAREST);
+        SDL_SetTextureColorMod(tex, cmd.color.r, cmd.color.g, cmd.color.b);
+        SDL_SetTextureAlphaMod(tex, cmd.color.a);
+
+        SDL_FRect src_frect = {
+            cmd.src_rect.position.x.to_float(),
+            cmd.src_rect.position.y.to_float(),
+            cmd.src_rect.size.x.to_float(),
+            cmd.src_rect.size.y.to_float()
+        };
+        double rot_deg = static_cast<double>(cmd.rotation.to_float());
+        if (rot_deg != 0.0) {
+            SDL_RenderTextureRotated(renderer, tex, &src_frect, &dst_rect, rot_deg, NULL, SDL_FLIP_NONE);
+        } else {
+            SDL_RenderTexture(renderer, tex, &src_frect, &dst_rect);
+        }
+    } else {
+        SDL_SetRenderDrawColor(renderer, cmd.color.r, cmd.color.g, cmd.color.b, cmd.color.a);
+        SDL_RenderFillRect(renderer, &dst_rect);
+    }
+}
+
 void VisualServer::render_editor_scene(float alpha, int width, int height, const Vector2Fixed& cam_pan, float cam_zoom) {
     (void)alpha;
     if (!renderer || width <= 0 || height <= 0) return;
@@ -146,28 +205,7 @@ void VisualServer::render_editor_scene(float alpha, int width, int height, const
         float draw_h = cmd.size.y.to_float() * cmd.scale.y.to_float() * cam_zoom;
 
         SDL_FRect dst_rect = { draw_x, draw_y, draw_w, draw_h };
-        double rot_deg = static_cast<double>(cmd.rotation.to_float());
-
-        SDL_Texture* tex = TextureServer::get()->get_texture(cmd.texture_id);
-
-        if (tex) {
-            SDL_SetTextureColorMod(tex, cmd.color.r, cmd.color.g, cmd.color.b);
-            SDL_SetTextureAlphaMod(tex, cmd.color.a);
-            SDL_FRect src_frect = {
-                cmd.src_rect.position.x.to_float(),
-                cmd.src_rect.position.y.to_float(),
-                cmd.src_rect.size.x.to_float(),
-                cmd.src_rect.size.y.to_float()
-            };
-            if (rot_deg != 0.0) {
-                SDL_RenderTextureRotated(renderer, tex, &src_frect, &dst_rect, rot_deg, NULL, SDL_FLIP_NONE);
-            } else {
-                SDL_RenderTexture(renderer, tex, &src_frect, &dst_rect);
-            }
-        } else {
-            SDL_SetRenderDrawColor(renderer, cmd.color.r, cmd.color.g, cmd.color.b, cmd.color.a);
-            SDL_RenderFillRect(renderer, &dst_rect);
-        }
+        draw_quad_internal(cmd, dst_rect);
     }
 
     last_draw_call_count = render_queue.size();
@@ -212,34 +250,13 @@ void VisualServer::render_scene(float alpha) {
         float draw_h = cmd.size.y.to_float() * cmd.scale.y.to_float() * active_cam_zoom;
 
         SDL_FRect dst_rect = { draw_x, draw_y, draw_w, draw_h };
-        double rot_deg = static_cast<double>(cmd.rotation.to_float());
-
-        SDL_Texture* tex = TextureServer::get()->get_texture(cmd.texture_id);
-
-        if (tex) {
-            SDL_SetTextureColorMod(tex, cmd.color.r, cmd.color.g, cmd.color.b);
-            SDL_SetTextureAlphaMod(tex, cmd.color.a);
-            SDL_FRect src_frect = {
-                cmd.src_rect.position.x.to_float(),
-                cmd.src_rect.position.y.to_float(),
-                cmd.src_rect.size.x.to_float(),
-                cmd.src_rect.size.y.to_float()
-            };
-            if (rot_deg != 0.0) {
-                SDL_RenderTextureRotated(renderer, tex, &src_frect, &dst_rect, rot_deg, NULL, SDL_FLIP_NONE);
-            } else {
-                SDL_RenderTexture(renderer, tex, &src_frect, &dst_rect);
-            }
-        } else {
-            // Fallback procedural retro quad rendering if texture is invalid/null
-            SDL_SetRenderDrawColor(renderer, cmd.color.r, cmd.color.g, cmd.color.b, cmd.color.a);
-            SDL_RenderFillRect(renderer, &dst_rect);
-        }
+        draw_quad_internal(cmd, dst_rect);
     }
 
     last_draw_call_count = render_queue.size();
     render_queue.clear();
 }
+
 
 void VisualServer::present_fullscreen(int win_w, int win_h) {
     if (!renderer || !virtual_framebuffer) return;

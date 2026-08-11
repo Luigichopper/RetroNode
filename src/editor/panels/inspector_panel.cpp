@@ -1,9 +1,11 @@
 #include "inspector_panel.h"
 #include "../editor_state.h"
 #include "../../core/object/class_db.h"
+#include "../../scene/2d/camera_2d.h"
 #include <imgui.h>
 #include <imgui_stdlib.h>
 #include <iostream>
+
 
 namespace RetroNode {
 
@@ -26,7 +28,12 @@ void InspectorPanel::draw() {
         if (ImGui::InputText("Name", name_buf, sizeof(name_buf))) {
             node_target->set_name(name_buf);
         }
-        ImGui::TextDisabled("Class: %s", target->get_class_name().as_string().c_str());
+        std::string class_display = target->get_class_name().as_string();
+        if (node_target->has_script() && class_display == "PlayerController") {
+            class_display = "CharacterBody2D";
+        }
+        ImGui::TextDisabled("Class: %s", class_display.c_str());
+
 
         if (node_target->is_instanced_subscene()) {
             ImGui::TextColored(ImVec4(0.3f, 0.75f, 1.0f, 1.0f), "Instanced Scene: %s", node_target->get_scene_instance_path().c_str());
@@ -35,10 +42,27 @@ void InspectorPanel::draw() {
         if (node_target->has_script()) {
             std::string s_info = node_target->get_script_path();
             if (s_info.empty()) s_info = target->get_class_name().as_string();
-            ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.3f, 1.0f), "Script Attached: %s", s_info.c_str());
+            ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.3f, 1.0f), "Script: %s", s_info.c_str());
+            ImGui::SameLine();
+            if (ImGui::Button("Detach")) {
+                node_target->set_script_path("");
+                EditorState::get()->push_undo_snapshot();
+            }
+        } else {
+            static char script_buf[128] = "";
+            ImGui::SetNextItemWidth(140.0f);
+            ImGui::InputTextWithHint("##ScriptPath", "Script class/path...", script_buf, sizeof(script_buf));
+            ImGui::SameLine();
+            if (ImGui::Button("Attach Script")) {
+                if (script_buf[0] != '\0') {
+                    node_target->set_script_path(script_buf);
+                    EditorState::get()->push_undo_snapshot();
+                }
+            }
         }
 
         ImGui::Separator();
+
     }
 
     std::vector<PropertyInfo> props = target->get_property_list();
@@ -70,15 +94,27 @@ void InspectorPanel::draw() {
             }
             case VariantType::INT: {
                 int i = static_cast<int>(val.as_int());
-                if (ImGui::DragInt(label.c_str(), &i)) {
-                    Variant new_val((int64_t)i);
-                    if (!target->set(pinfo.name, new_val)) {
-                        ClassDB::set_property(target, pinfo.name, new_val);
+                if (label == "mode" && dynamic_cast<Camera2D*>(target)) {
+                    const char* modes[] = { "0: FOLLOW (Smooth Target)", "1: ZELDA_ROOM (Grid Transition)", "2: SMB1_FORWARD (Scroll Right Only)", "3: ANCHORED (Fixed Position)" };
+                    if (ImGui::Combo(label.c_str(), &i, modes, IM_ARRAYSIZE(modes))) {
+                        Variant new_val((int64_t)i);
+                        if (!target->set(pinfo.name, new_val)) {
+                            ClassDB::set_property(target, pinfo.name, new_val);
+                        }
+                        value_changed = true;
                     }
-                    value_changed = true;
+                } else {
+                    if (ImGui::DragInt(label.c_str(), &i)) {
+                        Variant new_val((int64_t)i);
+                        if (!target->set(pinfo.name, new_val)) {
+                            ClassDB::set_property(target, pinfo.name, new_val);
+                        }
+                        value_changed = true;
+                    }
                 }
                 break;
             }
+
             case VariantType::FLOAT16: {
                 float f = val.as_fixed16().to_float();
                 if (ImGui::DragFloat(label.c_str(), &f, 0.1f)) {

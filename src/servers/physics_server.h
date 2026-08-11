@@ -45,6 +45,8 @@ private:
     // Spatial Hash Grid partitioning for O(1) cell lookups
     static constexpr int CELL_SIZE = 32;
     std::unordered_map<uint64_t, std::vector<size_t>> spatial_grid;
+    std::unordered_map<uint64_t, std::vector<uint64_t>> active_spatial_grid;
+
 
     uint64_t get_cell_key(int grid_x, int grid_y) const {
         return (static_cast<uint64_t>(grid_x) << 32) | (static_cast<uint32_t>(grid_y) & 0xFFFFFFFF);

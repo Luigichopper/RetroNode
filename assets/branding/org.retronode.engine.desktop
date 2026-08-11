@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=RetroNode Engine
+Comment=Game-Agnostic 2D Fixed-Point Engine & Visual Editor
+Exec=retronode %f
+Icon=retronode
+Terminal=false
+Categories=Development;Building;IDE;Game;
+MimeType=application/x-retronode-project;

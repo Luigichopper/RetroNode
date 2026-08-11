@@ -31,7 +31,8 @@ private:
     std::unordered_map<std::string, uint32_t> path_to_id;
     std::unordered_map<std::string, AtlasRegion> atlas_regions;
     SDL_Renderer* renderer = nullptr;
-    std::string project_dir = "./MyRPG";
+    std::string project_dir = "";
+
 
 public:
     TextureServer();
@@ -51,7 +52,9 @@ public:
     const std::string& get_project_dir() const { return project_dir; }
 
     uint32_t load_texture(const std::string& filepath);
+    void set_window_icon(SDL_Window* window, const std::string& filepath);
     uint32_t create_procedural_texture(const std::string& name, int width, int height, const uint8_t* rgba_pixels);
+
 
     bool load_atlas_manifest(const std::string& manifest_path);
     bool get_atlas_region(const std::string& region_name, uint32_t& out_texture_id, Rect2Fixed& out_rect) const;
