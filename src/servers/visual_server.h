@@ -20,6 +20,8 @@ struct DrawCommand {
     SDL_Color color;
     Fixed16 rotation;
     Vector2Fixed scale;
+    bool flip_h = false;
+    bool flip_v = false;
 };
 
 class RN_API VisualServer {
@@ -67,7 +69,9 @@ public:
         int z_index = 0,
         SDL_Color color = {255, 255, 255, 255},
         Fixed16 rotation = Fixed16(0),
-        Vector2Fixed scale = Vector2Fixed::one()
+        Vector2Fixed scale = Vector2Fixed::one(),
+        bool flip_h = false,
+        bool flip_v = false
     );
     void draw_line_2d(const Vector2Fixed& p_start, const Vector2Fixed& p_end, SDL_Color p_color);
     void draw_rect_outline_2d(const Rect2Fixed& p_rect, SDL_Color p_color);

@@ -3,12 +3,23 @@
         {
             "name": "Sprite",
             "properties": {
+                "animation": "default",
+                "autoplay": "",
+                "centered": false,
+                "flip_h": false,
+                "flip_v": false,
+                "frame": 0,
                 "modulate": [
                     255,
                     255,
                     255,
                     255
                 ],
+                "offset": {
+                    "x": 0.0,
+                    "y": 0.0
+                },
+                "playing": true,
                 "position": {
                     "x": 0.0,
                     "y": 0.0
@@ -18,7 +29,26 @@
                     "x": 1.0,
                     "y": 1.0
                 },
-                "texture": "res://assets/sprites/hero.png",
+                "script_path": "",
+                "speed_scale": 1.0,
+                "sprite_frames": {
+                    "default": {
+                        "frames": [
+                            {
+                                "duration": 1.0,
+                                "region": [
+                                    0.0,
+                                    0.0,
+                                    16.0,
+                                    16.0
+                                ],
+                                "texture": "C:\\Users\\Luigi\\Documents\\RetroNode\\MyRPG\\assets\\sprites\\hero.png"
+                            }
+                        ],
+                        "loop": true,
+                        "speed": 5.0
+                    }
+                },
                 "z_index": 10
             },
             "type": "AnimatedSprite2D"
@@ -26,6 +56,48 @@
         {
             "name": "Camera",
             "properties": {
+                "current": true,
+                "drag_margin_bottom": 0.1999969482421875,
+                "drag_margin_enabled": true,
+                "drag_margin_left": 0.1999969482421875,
+                "drag_margin_right": 0.1999969482421875,
+                "drag_margin_top": 0.1999969482421875,
+                "limit_bottom": 1024.0,
+                "limit_enabled": true,
+                "limit_left": 0.0,
+                "limit_right": 1024.0,
+                "limit_top": 0.0,
+                "mode": 1,
+                "position": {
+                    "x": 0.0,
+                    "y": 0.0
+                },
+                "room_height": 224,
+                "room_width": 256,
+                "rotation": 0.0,
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0
+                },
+                "script_path": "",
+                "smoothing_enabled": true,
+                "smoothing_speed": 10.0
+            },
+            "type": "Camera2D"
+        },
+        {
+            "name": "HurtAudio",
+            "properties": {
+                "autoplay": false,
+                "script_path": "",
+                "stream": "res://assets/audio/hurt_1.wav",
+                "volume": 1.0
+            },
+            "type": "AudioStreamPlayer"
+        },
+        {
+            "name": "AnimPlayer",
+            "properties": {
                 "position": {
                     "x": 0.0,
                     "y": 0.0
@@ -34,22 +106,10 @@
                 "scale": {
                     "x": 1.0,
                     "y": 1.0
-                }
+                },
+                "script_path": "AnimationPlayer"
             },
-            "type": "Camera2D"
-        },
-        {
-            "name": "HurtAudio",
-            "properties": {
-                "autoplay": false,
-                "stream": "res://assets/audio/hurt_1.wav",
-                "volume": 1.0
-            },
-            "type": "AudioStreamPlayer"
-        },
-        {
-            "name": "AnimPlayer",
-            "type": "AnimationPlayer"
+            "type": "CharacterBody2D"
         }
     ],
     "name": "Hero",
@@ -62,9 +122,8 @@
         "scale": {
             "x": 1.0,
             "y": 1.0
-        }
+        },
+        "script_path": ""
     },
-    "type": "CharacterBody2D",
-    "script": "PlayerController"
+    "type": "PlayerController"
 }
-

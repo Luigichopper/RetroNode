@@ -16,6 +16,8 @@
 #include "../physics/static_body_2d.h"
 #include "../physics/area_2d.h"
 #include "../physics/character_body_2d.h"
+#include "../2d/animated_sprite_2d.h"
+#include "../../core/resource/sprite_frames.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -276,6 +278,22 @@ static Node *parse_node_internal(const json &j) {
       }
       if (props.contains("autoplay")) {
         anim_player->play(props["autoplay"]);
+      }
+    }
+
+    AnimatedSprite2D *anim_sprite = dynamic_cast<AnimatedSprite2D *>(node);
+    if (anim_sprite) {
+      if (props.contains("sprite_frames") && props["sprite_frames"].is_object()) {
+        anim_sprite->get_sprite_frames()->from_json(props["sprite_frames"]);
+      }
+      if (props.contains("animation")) {
+        anim_sprite->set_animation(props["animation"]);
+      }
+      if (props.contains("autoplay")) {
+        anim_sprite->set_autoplay(props["autoplay"]);
+      }
+      if (props.contains("frame")) {
+        anim_sprite->set_frame(props.value("frame", 0));
       }
     }
 
@@ -630,6 +648,11 @@ static json serialize_node_internal(const Node* node) {
                 break;
         }
     }
+    const AnimatedSprite2D* anim_sprite = dynamic_cast<const AnimatedSprite2D*>(node);
+    if (anim_sprite && anim_sprite->get_sprite_frames()) {
+        props["sprite_frames"] = anim_sprite->get_sprite_frames()->to_json();
+    }
+
     const TileMapLayer* tilemap = dynamic_cast<const TileMapLayer*>(node);
     if (tilemap) {
         props["columns"] = tilemap->columns;

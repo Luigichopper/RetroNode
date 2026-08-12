@@ -8,10 +8,10 @@
 #include "panels/viewport_panel.h"
 #include "panels/game_view_panel.h"
 #include "panels/tilemap_panel.h"
+#include "panels/sprite_frames_panel.h"
+#include "file_dialog.h"
 #include "../servers/visual_server.h"
 #include "../servers/input.h"
-
-
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlrenderer3.h>
@@ -125,6 +125,10 @@ void EditorMain::render_frame(float alpha) {
         ViewportPanel::draw();
         GameViewPanel::draw();
         TilemapPanel::draw();
+        SpriteFramesPanel::draw();
+
+        // Render File Dialog Modal
+        FileDialog::get()->draw();
     }
 
     // 3. Render ImGui Draw Commands to Window Screen

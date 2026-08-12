@@ -1,7 +1,10 @@
 #include "inspector_panel.h"
 #include "../editor_state.h"
+#include "../file_dialog.h"
+#include "sprite_frames_panel.h"
 #include "../../core/object/class_db.h"
 #include "../../scene/2d/camera_2d.h"
+#include "../../scene/2d/animated_sprite_2d.h"
 #include <imgui.h>
 #include <imgui_stdlib.h>
 #include <iostream>
@@ -58,6 +61,15 @@ void InspectorPanel::draw() {
                     node_target->set_script_path(script_buf);
                     EditorState::get()->push_undo_snapshot();
                 }
+            }
+        }
+
+        AnimatedSprite2D* anim_sprite = dynamic_cast<AnimatedSprite2D*>(node_target);
+        if (anim_sprite) {
+            ImGui::Spacing();
+            if (ImGui::Button("Edit SpriteFrames...", ImVec2(-1, 28))) {
+                SpriteFramesPanel::open = true;
+                ImGui::SetWindowFocus("SpriteFrames");
             }
         }
 
@@ -171,27 +183,53 @@ void InspectorPanel::draw() {
             }
             case VariantType::STRING:
             case VariantType::STRING_NAME: {
-                char str_buf[256];
-                snprintf(str_buf, sizeof(str_buf), "%s", val.as_string().c_str());
-                if (ImGui::InputText(label.c_str(), str_buf, sizeof(str_buf))) {
-                    Variant new_val(str_buf);
-                    if (!target->set(pinfo.name, new_val)) {
-                        ClassDB::set_property(target, pinfo.name, new_val);
-                    }
-                    value_changed = true;
-                }
+                std::string str_val = val.as_string();
+                bool is_file_path = (pinfo.hint == PropertyHint::FILE_PATH) ||
+                                    (label.find("path") != std::string::npos) ||
+                                    (label.find("texture") != std::string::npos) ||
+                                    (label.find("tileset") != std::string::npos) ||
+                                    (label.find("stream") != std::string::npos);
 
-                // Asset Drag-and-Drop Target
-                if (ImGui::BeginDragDropTarget()) {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("RN_ASSET_PATH")) {
-                        const char* asset_path = (const char*)payload->Data;
-                        Variant new_val(asset_path);
+                if (is_file_path) {
+                    std::string filter = "*.*";
+                    if (label.find("texture") != std::string::npos || label.find("tileset") != std::string::npos) {
+                        filter = "*.png;*.jpg;*.jpeg;*.bmp";
+                    } else if (label.find("stream") != std::string::npos || label.find("audio") != std::string::npos) {
+                        filter = "*.wav;*.ogg;*.mp3";
+                    } else if (pinfo.hint_string.length() > 0) {
+                        filter = pinfo.hint_string;
+                    }
+
+                    if (FileDialog::draw_path_picker(label.c_str(), str_val, filter.c_str())) {
+                        Variant new_val(str_val);
                         if (!target->set(pinfo.name, new_val)) {
                             ClassDB::set_property(target, pinfo.name, new_val);
                         }
                         value_changed = true;
                     }
-                    ImGui::EndDragDropTarget();
+                } else {
+                    char str_buf[256];
+                    snprintf(str_buf, sizeof(str_buf), "%s", str_val.c_str());
+                    if (ImGui::InputText(label.c_str(), str_buf, sizeof(str_buf))) {
+                        Variant new_val(str_buf);
+                        if (!target->set(pinfo.name, new_val)) {
+                            ClassDB::set_property(target, pinfo.name, new_val);
+                        }
+                        value_changed = true;
+                    }
+
+                    // Asset Drag-and-Drop Target
+                    if (ImGui::BeginDragDropTarget()) {
+                        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("RN_ASSET_PATH")) {
+                            const char* asset_path = (const char*)payload->Data;
+                            Variant new_val(asset_path);
+                            if (!target->set(pinfo.name, new_val)) {
+                                ClassDB::set_property(target, pinfo.name, new_val);
+                            }
+                            value_changed = true;
+                        }
+                        ImGui::EndDragDropTarget();
+                    }
                 }
                 break;
             }

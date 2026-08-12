@@ -90,6 +90,7 @@ set(ENGINE_CORE_SOURCES
     src/core/object/class_db.cpp
     src/core/resource/gradient.cpp
     src/core/resource/curve.cpp
+    src/core/resource/sprite_frames.cpp
     src/core/math/perlin_noise.cpp
     src/servers/input.cpp
     src/servers/visual_server.cpp
@@ -103,6 +104,7 @@ set(ENGINE_CORE_SOURCES
     src/scene/2d/node_2d.cpp
     src/scene/2d/marker_2d.cpp
     src/scene/2d/sprite_2d.cpp
+    src/scene/2d/animated_sprite_2d.cpp
     src/scene/2d/tile_map_layer.cpp
     src/scene/2d/camera_2d.cpp
     src/scene/2d/cpu_particles_2d.cpp
@@ -123,6 +125,7 @@ if (RN_BUILD_EDITOR)
     list(APPEND ENGINE_CORE_SOURCES
         src/editor/editor_state.cpp
         src/editor/editor_main.cpp
+        src/editor/file_dialog.cpp
         src/editor/project_manager.cpp
         src/editor/panels/main_menu_bar.cpp
         src/editor/panels/scene_tree_panel.cpp
@@ -132,6 +135,7 @@ if (RN_BUILD_EDITOR)
         src/editor/panels/game_view_panel.cpp
         src/editor/panels/project_settings_window.cpp
         src/editor/panels/tilemap_panel.cpp
+        src/editor/panels/sprite_frames_panel.cpp
     )
 endif()
 

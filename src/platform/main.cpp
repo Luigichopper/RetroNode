@@ -24,6 +24,8 @@
 #include "scene/main/timer.h"
 #include "scene/2d/marker_2d.h"
 #include "scene/2d/cpu_particles_2d.h"
+#include "scene/2d/animated_sprite_2d.h"
+#include "core/resource/sprite_frames.h"
 #include "servers/audio_server.h"
 #include "game_module.h"
 
@@ -98,10 +100,52 @@ void register_engine_classes() {
         &Sprite2D::set_modulate, &Sprite2D::get_modulate
     );
 
+    RN_REGISTER_CLASS(SpriteFrames);
+
     RN_REGISTER_CLASS(AnimatedSprite2D);
     ClassDB::register_property(
-        "AnimatedSprite2D", PropertyInfo{ "current_animation", VariantType::STRING },
-        &AnimatedSprite2D::set_current_animation, &AnimatedSprite2D::get_current_animation
+        "AnimatedSprite2D", PropertyInfo{ "animation", VariantType::STRING },
+        &AnimatedSprite2D::set_animation, &AnimatedSprite2D::get_animation
+    );
+    ClassDB::register_property(
+        "AnimatedSprite2D", PropertyInfo{ "autoplay", VariantType::STRING },
+        &AnimatedSprite2D::set_autoplay, &AnimatedSprite2D::get_autoplay
+    );
+    ClassDB::register_property(
+        "AnimatedSprite2D", PropertyInfo{ "frame", VariantType::INT },
+        &AnimatedSprite2D::set_frame, &AnimatedSprite2D::get_frame
+    );
+    ClassDB::register_property(
+        "AnimatedSprite2D", PropertyInfo{ "speed_scale", VariantType::FLOAT16 },
+        &AnimatedSprite2D::set_speed_scale, &AnimatedSprite2D::get_speed_scale
+    );
+    ClassDB::register_property(
+        "AnimatedSprite2D", PropertyInfo{ "playing", VariantType::BOOL },
+        &AnimatedSprite2D::set_playing, &AnimatedSprite2D::is_playing
+    );
+    ClassDB::register_property(
+        "AnimatedSprite2D", PropertyInfo{ "centered", VariantType::BOOL },
+        &AnimatedSprite2D::set_centered, &AnimatedSprite2D::is_centered
+    );
+    ClassDB::register_property(
+        "AnimatedSprite2D", PropertyInfo{ "offset", VariantType::VECTOR2 },
+        &AnimatedSprite2D::set_offset, &AnimatedSprite2D::get_offset
+    );
+    ClassDB::register_property(
+        "AnimatedSprite2D", PropertyInfo{ "flip_h", VariantType::BOOL },
+        &AnimatedSprite2D::set_flip_h, &AnimatedSprite2D::is_flip_h
+    );
+    ClassDB::register_property(
+        "AnimatedSprite2D", PropertyInfo{ "flip_v", VariantType::BOOL },
+        &AnimatedSprite2D::set_flip_v, &AnimatedSprite2D::is_flip_v
+    );
+    ClassDB::register_property(
+        "AnimatedSprite2D", PropertyInfo{ "z_index", VariantType::INT },
+        &AnimatedSprite2D::set_z_index, &AnimatedSprite2D::get_z_index
+    );
+    ClassDB::register_property(
+        "AnimatedSprite2D", PropertyInfo{ "modulate", VariantType::COLOR },
+        &AnimatedSprite2D::set_modulate, &AnimatedSprite2D::get_modulate
     );
 
     RN_REGISTER_CLASS(TileMapLayer);

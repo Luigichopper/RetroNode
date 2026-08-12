@@ -102,9 +102,11 @@ void VisualServer::submit_draw_sprite(
     int z_index,
     SDL_Color color,
     Fixed16 rotation,
-    Vector2Fixed scale
+    Vector2Fixed scale,
+    bool flip_h,
+    bool flip_v
 ) {
-    render_queue.push_back({pos, prev_pos, size, src_rect, texture_id, z_index, color, rotation, scale});
+    render_queue.push_back({pos, prev_pos, size, src_rect, texture_id, z_index, color, rotation, scale, flip_h, flip_v});
 }
 
 void VisualServer::draw_line_2d(const Vector2Fixed& p_start, const Vector2Fixed& p_end, SDL_Color p_color) {
@@ -170,8 +172,12 @@ void VisualServer::draw_quad_internal(const DrawCommand& cmd, const SDL_FRect& d
             cmd.src_rect.size.y.to_float()
         };
         double rot_deg = static_cast<double>(cmd.rotation.to_float());
-        if (rot_deg != 0.0) {
-            SDL_RenderTextureRotated(renderer, tex, &src_frect, &dst_rect, rot_deg, NULL, SDL_FLIP_NONE);
+        SDL_FlipMode flip = SDL_FLIP_NONE;
+        if (cmd.flip_h) flip = static_cast<SDL_FlipMode>(flip | SDL_FLIP_HORIZONTAL);
+        if (cmd.flip_v) flip = static_cast<SDL_FlipMode>(flip | SDL_FLIP_VERTICAL);
+
+        if (rot_deg != 0.0 || flip != SDL_FLIP_NONE) {
+            SDL_RenderTextureRotated(renderer, tex, &src_frect, &dst_rect, rot_deg, NULL, flip);
         } else {
             SDL_RenderTexture(renderer, tex, &src_frect, &dst_rect);
         }

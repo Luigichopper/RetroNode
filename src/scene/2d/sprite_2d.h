@@ -2,6 +2,7 @@
 #define RETRONODE_SPRITE_2D_H
 
 #include "node_2d.h"
+#include "animated_sprite_2d.h"
 #include <SDL3/SDL.h>
 
 namespace RetroNode {
@@ -35,24 +36,6 @@ public:
     SDL_Color get_modulate() const { return modulate; }
 
     virtual void _process(float delta) override;
-};
-
-class RN_API AnimatedSprite2D : public Sprite2D {
-    RN_CLASS(AnimatedSprite2D, Sprite2D)
-
-private:
-    std::string current_animation = "idle";
-
-public:
-    AnimatedSprite2D();
-    virtual ~AnimatedSprite2D() = default;
-
-    void set_current_animation(const std::string& anim_name) { current_animation = anim_name; }
-    const std::string& get_current_animation() const { return current_animation; }
-
-    void play(const std::string& anim_name) {
-        current_animation = anim_name;
-    }
 };
 
 } // namespace RetroNode
